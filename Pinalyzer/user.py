@@ -13,9 +13,14 @@ import codecs
 import os
 import urllib2
 import urllib
+import simplejson as json
+
 
 class user:
 
+    followers=[]
+    following=[]
+    
     def __init__(self,id,location=None):
         self.id=id
         self.location=location
@@ -30,12 +35,16 @@ class user:
         total_pages=int(page_s[12:-1])
         print total_pages
 
+        follower_list=[]
         soup=BeautifulSoup(source)
-        follower_list=soup.findAll('div',attrs={'class':'person'})
-        for follower in follower_list:
+        follower_list_html=soup.findAll('div',attrs={'class':'person'})
+        for follower in follower_list_html:
             a=follower.findAll('a')[2]['href']
             print a
+            follower_list.append(a)
     #print follower_list
+    
+        self.followers=follower_list
         return follower_list
 
     def fetchFollowing(self):
@@ -46,14 +55,24 @@ class user:
         page_s=re.findall("totalPages.*",source)[0]
         total_pages=int(page_s[12:-1])
         print total_pages
-
+        following_list=[]
         soup=BeautifulSoup(source)
-        following_list=soup.findAll('div',attrs={'class':'person'})
-        for following in following_list:
+        following_list_html=soup.findAll('div',attrs={'class':'person'})
+        for following in following_list_html:
             a=following.findAll('a')[2]['href']
             print a
+            following_list.append(a)
     #print follower_list
+        self.following=following_list
         return following_list
+
+    
+    def getFollowersJSON(self):
+        return json.dumps(self.followers)
+    
+    def getFollowingJSON(self):
+        return json.dumps(self.following)
+    
 
 def searchUser(id):    
     url="http://pinterest.com/search/people/?q="+str(id)
@@ -82,3 +101,4 @@ def fetchFollowers(id):
 u=user('mmanion')
 u.fetchFollowers()
 u.fetchFollowing()
+print u.getFollowersJSON()
