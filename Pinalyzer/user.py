@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 ############################
 # Pinalyser
 # some primitive functions             #
@@ -16,12 +15,15 @@ import urllib
 import simplejson as json
 
 
-class user:
+class User:
 
     
     
-    def __init__(self,id,location=None):
+    def __init__(self,id,location=None, name=None, photo_url=None):
         self.id=id
+        self.name=name
+        self.photo_url=photo_url
+        
         self.location=location
         self.followers=[]
         self.following=[]      
@@ -30,27 +32,38 @@ class user:
         print "followers pour "+str(self.id)
         url="http://pinterest.com/"+str(self.id)+"/followers/"
         htmlfile=urllib2.urlopen(url)
-        source=htmlfile.read(2000000)
+        source=htmlfile.read()
+        
         #get the total number of pages in the results (pages are loaded via AJAX) but we can hack that
         page_s=re.findall("totalPages.*",source)[0]
         total_pages=int(page_s[12:-1])
         print total_pages
+        
 
         follower_list=[]
         soup=BeautifulSoup(source)
-        follower_list_html=soup.findAll('div',attrs={'class':'person'})
-        
+        follower_list_html=soup.find_all('div',attrs={'class':'person'})          
         for follower in follower_list_html:
+            # follower photo url
+            f_photo=follower.find('a')['style'][22:-1]
+            print f_photo
+            
             # follower id 
-            f_id=follower.findAll('a')[2]['href']
+            f_tag=follower.find_all('a')[1]
+            f_id=f_tag['href'][1:-1]
             print f_id
+            
+            #follower namme
+            f_name=f_tag.contents[0]
+            print f_name
             # follower location
             f_loc=follower.find('span',{'class':'location'})
-            if f_loc != None : 
-                f_loc=f_loc.next_sibling         
+            if f_loc != None :
+                f_loc=f_loc.next_sibling
+                f_loc=re.sub("\n", "",f_loc)         
                 print f_loc
         
-            u=user(f_id,f_loc)
+            u=User(f_id,f_loc,f_name,f_photo)
             follower_list.append(u)
     #print follower_list
     
@@ -61,26 +74,35 @@ class user:
         print "following pour "+str(self.id)
         url="http://pinterest.com/"+str(self.id)+"/following/"
         htmlfile=urllib2.urlopen(url)
-        source=htmlfile.read(2000000)
+        source=htmlfile.read()
         page_s=re.findall("totalPages.*",source)[0]
         total_pages=int(page_s[12:-1])
         print total_pages
         
         following_list=[]
         soup=BeautifulSoup(source)
-        following_list_html=soup.findAll('div',attrs={'class':'person'})
-        
+        following_list_html=soup.find_all('div',attrs={'class':'person'})
         for following in following_list_html:
+            
+            #following photo url
+            f_photo=following.find('a')['style'][22:-1]
+            print f_photo
             # following id 
-            f_id=following.findAll('a')[2]['href']
+            f_tag=following.find_all('a')[1]
+            f_id=f_tag['href'][1:-1]
             print f_id
+            
+            #following name
+            f_name=f_tag.contents[0]
+            print f_name
             # following location
             f_loc=following.find('span',{'class':'location'})
             if f_loc != None : 
-                f_loc=f_loc.next_sibling         
+                f_loc=f_loc.next_sibling
+                f_loc=re.sub("\n", "",f_loc)        
                 print f_loc
         
-            u=user(f_id,f_loc)
+            u=User(f_id,f_loc,f_name,f_photo)
             following_list.append(u)
             
     #print follower_list
@@ -89,49 +111,28 @@ class user:
 
     
     def getFollowersJSON(self):
-    #hjkhkjkhkj
         return json.dumps(self.followers)
     
     def getFollowingJSON(self):
-        return json.dumps(self.following)
-    
+        return json.dumps(self.following)  
 
-def searchUser(id):    
-    url="http://pinterest.com/search/people/?q="+str(id)
-    htmlfile=urllib2.urlopen (url)
-    source=htmlfile.read (2000000)
-    soup = BeautifulSoup(source)
-    user_list= soup.findAll('div',attrs={'class':'pin user'})
-    print user_list
-    return user_list
+    def searchUser(self,id):    
+        url="http://pinterest.com/search/people/?q="+str(id)
+        htmlfile=urllib2.urlopen (url)
+        source=htmlfile.read ()
+        soup = BeautifulSoup(source)
+        user_list= soup.find_all('div',attrs={'class':'pin user'})
+        print user_list
+        return user_list
 
-def fetchFollowers(id):
-    url="http://pinterest.com/"+str(id)+"/followers/"
-    htmlfile=urllib2.urlopen(url)
-    source=htmlfile.read(2000000)
-    soup=BeautifulSoup(source)
-    follower_list=soup.findAll('div',attrs={'class':'person'})
-    
-    for follower in follower_list: 
-        # follower id 
-        f_id=follower.findAll('a')[2]['href']
-        print f_id
-        # follower location
-        f_loc=follower.find('span',{'class':'location'})
-        if f_loc != None : 
-            f_loc=f_loc.next_sibling         
-            print f_loc
-        
-        u=user(f_id,f_loc)
-        follower_list.append(u)
-            
-    #print follower_list
-    return follower_list
+    @staticmethod
+    def encode_user(obj):
+        if not isinstance(obj, User):
+            raise TypeError("%r is not JSON serializable" % (obj))
+        return obj.__dict__
+
 
 #######
 #test
 
-u=user('ozdensevren')
-for x in u.fetchFollowers():
-    print x
-print u.fetchFollowing()
+
