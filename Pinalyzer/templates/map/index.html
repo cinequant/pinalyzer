@@ -1,0 +1,117 @@
+{% autoescape off %}
+<!DOCTYPE html>
+<head>
+	<meta name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <style type="text/css">
+      	html, body, #map_canvas {
+        	margin: 0;
+        	padding: 0;
+        	height: 1000px;
+        	width:1000px;
+      	}
+      	
+      	.user_photo{
+      		width:30px;
+      		height:30px;
+      		display:inline;
+      		
+      	}
+      	
+      	.personn {
+      		padding-bottom:5px;
+ 
+      	}
+    </style>
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    
+    
+    <script type="text/javascript">
+      	var map;
+      	function initialize() {
+      		
+      		//Options de la map
+      		var myOptions = {
+      				zoom: 1,
+      				center: new google.maps.LatLng(0, 0),
+      				mapTypeId: google.maps.MapTypeId.ROADMAP
+           	};
+      		// initialisation de la map
+      		map = new google.maps.Map(document.getElementById('map_canvas'),myOptions);
+      	}
+      	
+      	
+      	
+      	function setGroup(group,lat,lng){
+      		
+      		var LatLng = new google.maps.LatLng(lat,lng);
+      		
+      		var marker = new google.maps.Marker({
+          		map: map,
+          		position: LatLng,
+          		animation: google.maps.Animation.DROP,
+      		});
+      		marker.setMap(map);
+    			
+    		var html_win="<div class=\"infowindow\">";
+    		
+    		for (var i=0; i<group.length; i++){
+    			if(group[i][1]){
+    				var follow="Follower";
+    			}
+    			else{
+    				var follow="Following";
+    			}
+    			
+    			html_win+="<div class=\"person\">"+
+    				"<a href=\"http://pinterest.com/"+group[i][0].id+"\"> <img class=\"user_photo\" src=\""+group[i][0].photo_url+"\"/></a>"+
+    				"<a href=\"http://pinterest.com/"+group[i][0].id+"\"> <span>"+group[i][0].name+" ("+follow+") </span></a>"+
+    			"</div>";
+      		}
+      		
+      		html_win+="</div>";
+    		
+    		
+    		var infowindow = new google.maps.InfoWindow({
+    	    	content: html_win
+    		});
+    		
+    		google.maps.event.addListener(marker, 'click', function() {
+    	  		infowindow.open(map,marker);
+    		});
+      	}
+      	
+      	function setAllMarkers() {
+      		
+      		
+      		{% if group_list %}
+				group_list={{group_list}};
+      			for (var i=0;  i<group_list.length; i++){
+      				setGroup( group_list[i], group_list[i][0][0].lat, group_list[i][0][0].lng);
+      				
+      			}
+      		{% endif %}
+      		
+      	}
+      	
+      	
+      	google.maps.event.addDomListener(window, 'load', initialize);
+      	
+
+      	   
+      	
+      	
+
+    </script>
+</head>
+
+<body >
+	<div id="map_canvas"></div>
+		<td><input id= "bouton" type="button" value="Followers and Following" onclick="setAllMarkers()"/></td>
+	</div>
+		
+		
+</body>
+{% endautoescape %}
