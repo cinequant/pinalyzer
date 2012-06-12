@@ -3,8 +3,6 @@
 from django.shortcuts import render_to_response
 from user import User
 import simplejson as json
-import time
-import cProfile
 
 def index(request):
     try:
@@ -16,7 +14,6 @@ def index(request):
     
     f_list=[]
     group_list=[]
-    t=time.clock()
     for f in u.fetchFollowers(1):
         print f.lat
         if f.lat !=None and f.lng != None:
@@ -27,7 +24,6 @@ def index(request):
         if f.lat !=None and f.lng != None:
             f_list.append([f,False])
             
-    print time.clock()-t
     if f_list !=[]:
         f_list.sort(key=lambda x:(x[0].lat,x[0].lng))
         
