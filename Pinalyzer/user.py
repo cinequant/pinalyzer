@@ -9,15 +9,28 @@ import urllib3
 import re
 import string
 import simplejson as json
-from map.models import UserModel, LocationModel
-from django.utils.encoding import smart_unicode
+from map.models import UserModel, LocationModel,PinModel
+from django.db import  IntegrityError
 from bs4 import BeautifulSoup
 
-re_user=re.compile('class="PersonImage ImgLink" style="background-image: url\((?P<photo>.+?)\)">'+'.*?'
-+'<h4><a href="/(?P<id>.+?)/">(?P<name>.+?)</a></h4>'+'.*?'
-+'((<span class="icon location"></span>(?P<location>.+?(?=\n)))|PersonPins">)', re.DOTALL)
-re_marker=re.compile('\.pageless\({(.*)"marker": (?P<marker>.+?)(?=\n)',re.DOTALL)
+# Reg exp of each person div ('/user_id/followers/' or '/user_id/following/')
 re_html_pers=re.compile('<div class="person">.*?<div class="PersonPins">',re.DOTALL)
+
+# Permits to retrieve one particular person information(id,name,photo,location) inside the corresponding person div ('/user_id/followers/' or '/user_id/following/')
+re_user=re.compile('class="PersonImage ImgLink" style="background-image: url\((?P<photo>.+?)\)">'+'.*?'
+                   +'<h4><a href="/(?P<id>.+?)/">(?P<name>.+?)</a></h4>'+'.*?'
+                   +'((<span class="icon location"></span>(?P<location>.+?(?=\n)))|PersonPins">)', re.DOTALL) 
+
+# Permits to retrieve the marker value ('pinterest.com/user_id/followers/' or 'pinterest.com/user_id/following/')
+re_follow_marker=re.compile('\.pageless\({(.*?)"marker": (?P<marker>.+?)(?=\n)',re.DOTALL)
+
+re_pin_div=re.compile('<div class="pin".*?(?=<div class="pin")',re.DOTALL)
+
+# Permits to retrieve one particular pin information inside the corresponding div ('popular' or '/all/search?category=...'
+re_pin_pinId=re.compile('<a href="/pin/(?P<pinId>[0-9]+?)/" class="PinImage ImgLink">')
+re_pin_pinUrl=re.compile('<img src="(?P<pinUrl>.*?)"')
+re_pin_more=re.compile('<a href="/(?P<pinnerId>.+?)/">(?P<pinnerName>.+?)</a> onto <a href="/(.+?)/(?P<boardId>.+?)/">(?P<boardName>.+?)</a>')
+
 
 http = urllib3.PoolManager()
 
@@ -35,28 +48,6 @@ def addressToLatLng(address):
     return (output['results'][0]['geometry']['location']['lat'],output['results'][0]['geometry']['location']['lng'])
 
 
-             
-def searchId(person_html):
-    match=re.search('<a href="/(?P<id>.*)/"',person_html)
-    return match.group('id')
-                
-def searchPhoto(person_html):
-    match=re.search('class="PersonImage ImgLink" style="background-image: url\((?P<photo>.+?)\)">',person_html)
-    return match.group('photo')
-             
-def searchName(person_html):
-    match=re.search('<h4><a href="/.+?/">(?P<name>.+?)</a></h4>',person_html)
-    if match == None:
-        raise Exception('No name')
-    return match.group('name')
-
-def searchLocation(person_html):
-    match=re.search('<span class="icon location"></span>(?P<location>.+)',person_html)
-    if match == None:
-        raise Exception('No location')
-    return match.group('location')
-
-
 def searchPersons(source):
     html_list= re.findall(re_html_pers,source) 
     return html_list
@@ -65,13 +56,55 @@ def searchUserInfo(person_html):
     match=re.search(re_user,person_html)
     f_id=match.group('id')
     f_loc=match.group('location')
+    if f_loc != None:
+        f_loc=f_loc.decode('utf-8')  
     f_name=match.group('name')      
     f_photo=match.group('photo')
     return (f_id,f_loc,f_name,f_photo)  
 
 def searchMarker(person_html):
-    match=re.search(re_marker,person_html)
-    return int(match.group('marker'))         
+    match=re.search(re_follow_marker,person_html)
+    return int(match.group('marker'))
+
+def searchPinId(pin_div):
+    match=re.search(re_pin_pinId,pin_div)
+    return match.group('pinId')
+
+def searchPinUrl(pin_div):
+    match=re.search(re_pin_pinUrl,pin_div)
+    return match.group('pinUrl')
+
+def searchPinMore(pin_div):
+    match=re.search(re_pin_more,pin_div)
+    return (match.group('pinnerId'), match.group('pinnerName'), match.group('boardId'), match.group('boardName'),)
+    
+
+
+def fetchPin(limit=1,category=None):
+    
+    if category==None:
+        url='http://pinterest.com/popular/?'
+    else:
+        url='http://pinterest.com/all/?category='+category+'&'
+    
+    
+    for page in range(1,limit+1):
+        print 'yo'
+        r=http.request('GET',url+'lazy=1&page='+str(page))
+        for pin_div in re.findall(re_pin_div,r.data):
+            
+            pinId=searchPinId(pin_div)
+            pinUrl=searchPinUrl(pin_div)
+            pinnerId,pinnerName,boardId,boardName=searchPinMore(pin_div)
+            
+            print (pinId, pinUrl, pinnerId, pinnerName, boardId, boardName)
+                
+            try:
+                PinModel.objects.create(pin_id=pinId,url=pinUrl,pinner_id=pinnerId,pinner_name=pinnerName,board_id=boardId,board_name=boardName)
+                    
+            except IntegrityError:
+                print 'Pin already in the database'
+                    
 
 class User:
     def __init__(self,user_id,location=None, name=None, photo_url=None):
@@ -98,12 +131,9 @@ class User:
                        
             for person_html in html_list:
                 f_id,f_loc,f_name,f_photo=searchUserInfo(person_html)
-                print f_loc
+                print (f_id,f_loc)
                 u=User(f_id,f_loc,f_name,f_photo)
-                try:
-                    u.calcLatLng()
-                except Exception as e:
-                    print e.args
+                u.calcLatLng()
                 follow_list.append(u)
                 
                                    
@@ -123,7 +153,6 @@ class User:
     def searchUser(self,user_id):    
         url="http://pinterest.com/search/people/?q="+str(user_id)
         r=http.request ('GET',url)
-        source=r.data
         soup = BeautifulSoup(r.data)
         user_list= soup.find_all('div',attrs={'class':'pin user'})
         return user_list
@@ -132,10 +161,8 @@ class User:
         # Get the user or create a new one.
         if self.location !=None:
             try:  
-                u_model = UserModel.objects.get(pk=self.id)
-                print "existe bien"                 
+                u_model = UserModel.objects.get(pk=self.id)               
             except UserModel.DoesNotExist:
-                print "existe pas encore"
                 u_model = UserModel.objects.create(pk=self.id, address=self.location)
             
             u_model.address = self.location # User address update on the db
@@ -144,12 +171,45 @@ class User:
             # Get the (lat,lng) or use geocoding 
             try:
                 loc_model=LocationModel.objects.get(pk=u_model.address)
-                print "est bien localisé"
                 self.lat,self.lng=(loc_model.lat,loc_model.lng)
             except LocationModel.DoesNotExist:
-                print "pas encore localisé"
-                self.lat, self.lng =addressToLatLng(self.location) # Geocoding
-                LocationModel.objects.create(address=self.location, lat=self.lat, lng=self.lng) # Mise à jour de la base  
+                try:
+                    self.lat, self.lng =addressToLatLng(self.location) # Geocoding
+                    LocationModel.objects.create(address=self.location, lat=self.lat, lng=self.lng) # Mise à jour de la base  
+                except Exception as e:
+                    print e.args
+                    
+    def getFollowGroups(self,limit=1):
+        f_list=[]
+        group_list=[]
+        for f in self.fetchFollowers(1):
+            if f.lat !=None and f.lng != None:
+                
+                f_list.append([f,True])
+            
+        for f in self.fetchFollowing(1):
+            if f.lat !=None and f.lng != None:
+                f_list.append([f,False])
+                
+        if f_list !=[]:
+            f_list.sort(key=lambda x:(x[0].lat,x[0].lng))
+            
+            prec_lat=f_list[0][0].lat 
+            prec_lng=f_list[0][0].lng
+            
+            group_list.append([])
+            j=0
+            group_list[0].append(f_list[0])
+             
+            for i in range(1,len(f_list)):
+                if (prec_lat !=f_list[i][0].lat) or (prec_lng != f_list[i][0].lng):
+                    j+=1
+                    group_list.append([])         
+                group_list[j].append(f_list[i])    
+                prec_lat=f_list[i][0].lat 
+                prec_lng=f_list[i][0].lng
+        return group_list
+                
             
         
     def getFollowersJSON(self):
@@ -165,6 +225,5 @@ class User:
         return obj.__dict__
     
 ## test ##
-
 
 

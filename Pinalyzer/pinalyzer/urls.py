@@ -15,4 +15,6 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
     url(r'^map/index/$','map.views.index' ),
+    url(r'^map/pinmatch/ranking$','map.views.ranking'),
+    url(r'^map/pinmatch/vote$','map.views.vote'),
 )

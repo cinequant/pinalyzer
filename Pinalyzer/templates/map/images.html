@@ -1,0 +1,31 @@
+{% autoescape off %}
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+</head>
+
+<body >
+
+	<table>
+		<tr>
+			<td>Pin</td>
+			<td>Score</td>
+			<td>Pinner</td>
+		</tr>
+		
+		{% for pin in pin_list %}
+		<tr>
+			<td><img src="{{pin.url}}"/></td>
+			<td>{{pin.score}}</td>
+			<td><a>{{pin.pinner_name}}</a></td>
+		</tr>
+		{% endfor %}
+	
+	</table>
+	
+
+		
+		
+</body>
+{% endautoescape %}
