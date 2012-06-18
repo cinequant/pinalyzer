@@ -1,4 +1,7 @@
 from django.conf.urls import patterns, include, url
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
+
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -17,4 +20,7 @@ urlpatterns = patterns('',
     url(r'^map/index/$','map.views.index' ),
     url(r'^map/pinmatch/ranking$','map.views.ranking'),
     url(r'^map/pinmatch/vote$','map.views.vote'),
+    url(r'^map/pinmatch/savematch$','map.views.savematch'),
 )
+
+urlpatterns += staticfiles_urlpatterns()

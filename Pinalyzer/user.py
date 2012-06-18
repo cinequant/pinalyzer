@@ -5,47 +5,44 @@
 # author: vl@cinequant.com #
 ############################
 
+
+from django.db import  IntegrityError
+from django.utils.simplejson import loads, dumps
+from map.models import UserModel, LocationModel,CategoryModel
+
+import cStringIO
+import Image
 import urllib3
 import re
 import string
-import simplejson as json
-from map.models import UserModel, LocationModel,PinModel
-from django.db import  IntegrityError
 from bs4 import BeautifulSoup
 
-# Reg exp of each person div ('/user_id/followers/' or '/user_id/following/')
+# the person div reg exp('/user_id/followers/' or '/user_id/following/')
 re_html_pers=re.compile('<div class="person">.*?<div class="PersonPins">',re.DOTALL)
 
-# Permits to retrieve one particular person information(id,name,photo,location) inside the corresponding person div ('/user_id/followers/' or '/user_id/following/')
+# Person informations (id,name,photo,location)
 re_user=re.compile('class="PersonImage ImgLink" style="background-image: url\((?P<photo>.+?)\)">'+'.*?'
                    +'<h4><a href="/(?P<id>.+?)/">(?P<name>.+?)</a></h4>'+'.*?'
                    +'((<span class="icon location"></span>(?P<location>.+?(?=\n)))|PersonPins">)', re.DOTALL) 
 
-# Permits to retrieve the marker value ('pinterest.com/user_id/followers/' or 'pinterest.com/user_id/following/')
+# Marker value ('pinterest.com/user_id/followers/' or 'pinterest.com/user_id/following/')
 re_follow_marker=re.compile('\.pageless\({(.*?)"marker": (?P<marker>.+?)(?=\n)',re.DOTALL)
 
+# The pin div reg exp
 re_pin_div=re.compile('<div class="pin".*?(?=<div class="pin")',re.DOTALL)
 
-# Permits to retrieve one particular pin information inside the corresponding div ('popular' or '/all/search?category=...'
+# Pin informations ('popular' or '/all/search?category=...'
 re_pin_pinId=re.compile('<a href="/pin/(?P<pinId>[0-9]+?)/" class="PinImage ImgLink">')
 re_pin_pinUrl=re.compile('<img src="(?P<pinUrl>.*?)"')
 re_pin_more=re.compile('<a href="/(?P<pinnerId>.+?)/">(?P<pinnerName>.+?)</a> onto <a href="/(.+?)/(?P<boardId>.+?)/">(?P<boardName>.+?)</a>')
 
+re_cat_div=re.compile('<div id="CategoriesBar" >.*?</div>',re.DOTALL)
+re_cat=re.compile('<a href="/all/\?category=(?P<cat_id>.+?)" >(?P<cat_name>.+?)</a>')
+
 
 http = urllib3.PoolManager()
 
-# Calculate from an adress, the corresponding geographic coordinates ( a (lat,lng) couple ), using geocoding service ( google map api).
-def addressToLatLng(address):
-    adr=string.replace(address, ' ', '+') 
-    r=http.request('GET','https://maps.googleapis.com/maps/api/geocode/json?address='+adr+'&sensor=false')
-    json_output=r.data
-    output=json.loads(json_output)
-    
-    if output['status'] != "OK":
-        
-        raise Exception('status ='+output['status'])
-    
-    return (output['results'][0]['geometry']['location']['lat'],output['results'][0]['geometry']['location']['lng'])
+
 
 
 def searchPersons(source):
@@ -78,33 +75,70 @@ def searchPinMore(pin_div):
     match=re.search(re_pin_more,pin_div)
     return (match.group('pinnerId'), match.group('pinnerName'), match.group('boardId'), match.group('boardName'),)
     
-
+def fetchCategories():
+    r=http.request('GET','http://pinterest.com')
+    match=re.search(re_cat_div,r.data)
+    print match.group(0)
+    for m in re.finditer(re_cat,match.group(0)):
+        cat_id=m.group('cat_id')
+        cat_name=m.group('cat_name')
+        try:
+            CategoryModel.objects.create(category_id=cat_id,category_name=cat_name)
+        except IntegrityError:
+            print 'Category already present in the database'
+    try:
+        CategoryModel.objects.create(category_id='',category_name='')
+    except IntegrityError:
+        print 'Category already present in the database'
+    
+        
+    
 
 def fetchPin(limit=1,category=None):
     
     if category==None:
         url='http://pinterest.com/popular/?'
+        cat=CategoryModel.objects.get(category_id='')
     else:
-        url='http://pinterest.com/all/?category='+category+'&'
-    
+        url='http://pinterest.com/all/?category='+str(category)+'&'
+        cat=CategoryModel.objects.get(category_id=category)
     
     for page in range(1,limit+1):
-        print 'yo'
         r=http.request('GET',url+'lazy=1&page='+str(page))
+
         for pin_div in re.findall(re_pin_div,r.data):
-            
             pinId=searchPinId(pin_div)
             pinUrl=searchPinUrl(pin_div)
             pinnerId,pinnerName,boardId,boardName=searchPinMore(pin_div)
             
             print (pinId, pinUrl, pinnerId, pinnerName, boardId, boardName)
+            if pinUrl != 'http://passets-ec.pinterest.com/images/VideoIndicator.png':
                 
-            try:
-                PinModel.objects.create(pin_id=pinId,url=pinUrl,pinner_id=pinnerId,pinner_name=pinnerName,board_id=boardId,board_name=boardName)
-                    
-            except IntegrityError:
-                print 'Pin already in the database'
-                    
+                try:
+                    cat.pinmodel_set.create(pin_id=pinId,url=pinUrl,pinner_id=pinnerId,pinner_name=pinnerName,board_id=boardId,board_name=boardName)
+                        
+                except IntegrityError:
+                    print 'Pin already in the database'
+
+# Calculate from an adress, the corresponding geographic coordinates ( a (lat,lng) couple ), using geocoding service ( google map api).
+def addressToLatLng(address):
+    adr=string.replace(address, ' ', '+') 
+    r=http.request('GET','https://maps.googleapis.com/maps/api/geocode/json?address='+adr+'&sensor=false')
+    json_output=r.data
+    output=loads(json_output)
+    
+    if output['status'] != "OK":
+        
+        raise Exception('status ='+output['status'])
+    
+    return (output['results'][0]['geometry']['location']['lat'],output['results'][0]['geometry']['location']['lng'])
+
+
+def getDim(url):
+    r=http.request('GET',url)
+    im= cStringIO.StringIO(r.data) # constructs a StringIO holding the image
+    img=Image.open(im)
+    return img.size
 
 class User:
     def __init__(self,user_id,location=None, name=None, photo_url=None):
@@ -213,17 +247,11 @@ class User:
             
         
     def getFollowersJSON(self):
-        return json.dumps(self.followers)
+        return dumps(self.followers)
     
     def getFollowingJSON(self):
-        return json.dumps(self.following)  
+        return dumps(self.following)  
     
-    @staticmethod
-    def encode_user(obj):
-        if not isinstance(obj, User):
-            raise TypeError("%r is not JSON serializable" % (obj))
-        return obj.__dict__
+   
     
 ## test ##
-
-

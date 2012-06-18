@@ -1,7 +1,9 @@
-from bs4 import BeautifulSoup
-import urllib2
+from map.models import PinModel
 
-url="http://pinterest.com/nordic_design/following/"
-htmlfile=urllib2.urlopen(url)
-source=htmlfile.read()
-soup=BeautifulSoup(source)
+def vider():
+    l=PinModel.objects.all()
+    for x in l:
+        x.score=0
+        x.match=0
+        x.save()
+        

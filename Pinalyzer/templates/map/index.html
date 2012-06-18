@@ -40,6 +40,7 @@
            	};
       		// initialisation de la map
       		map = new google.maps.Map(document.getElementById('map_canvas'),myOptions);
+      		setAllMarkers();
       	}
       	
       	
@@ -99,6 +100,8 @@
       	
       	google.maps.event.addDomListener(window, 'load', initialize);
       	
+      	
+      	
 
       	   
       	
@@ -109,7 +112,6 @@
 
 <body >
 	<div id="map_canvas"></div>
-		<td><input id= "bouton" type="button" value="Followers and Following" onclick="setAllMarkers()"/></td>
 	</div>
 		
 		
