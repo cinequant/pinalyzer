@@ -6,10 +6,12 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.simplejson import dumps
 from map.models import PinModel, CategoryModel
 
+import random
+
 from user import User, getDim
 from django_json import DjangoJSONEncoder
 
-import random
+
 
 
 def index(request):
@@ -30,6 +32,7 @@ def ranking(request):
 @ensure_csrf_cookie
 def vote(request):
     if request.is_ajax() and request.method== 'GET':
+        # Select all pins in a given category
         try:
             cat=request.GET['category']
             try:
@@ -45,17 +48,28 @@ def vote(request):
                   
         except KeyError:
             pin_list=PinModel.objects.all()
-            
+        
+           
+        
+        # Pick 2 pins   
+        request.session.modified = True 
+        if 'viewed_list' not in request.session :
+            request.session['viewed_list']=[]
+
+        pin_list=pin_list.order_by('-match').exclude(pin_id__in=request.session['viewed_list'])
+        
+        # if there are at least 2 pins not in the viewed list
         if len(pin_list)>1:
-            pin_list.order_by('-match')
             i=int(random.random()*len(pin_list)/5)
             j=int(random.random()*len(pin_list)/5)
             if i==j:
-                if i==0:
+                if j==0:
                     j+=1
                 else:
                     j-=1
             
+                      
+            # Send the 2 picked pins + dimension information
             w1,h1=getDim(pin_list[i].url)
             w2,h2=getDim(pin_list[j].url)
             pin1={'pin':pin_list[i],'width':w1,'height':h1}
@@ -65,6 +79,7 @@ def vote(request):
             return HttpResponse(data, mimetype='application/json')
         
         else:
+            # When there is no enough pin in the selcted category
             d={'status': 'ERR','data':'No pins in this category'}
             data = dumps(d,cls=DjangoJSONEncoder)
             return HttpResponse(data, mimetype='application/json')
@@ -88,13 +103,16 @@ def savematch(request):
             pin1.updateScore(pin1.pin_id==choice, diff)
             pin2.updateScore(pin2.pin_id==choice,-diff)
             
+            request.session['viewed_list'].append(pin1_id)
+            request.session['viewed_list'].append(pin2_id)
+            
             
             msg="OK"
             return HttpResponse(msg)
         
         except KeyError, PinModel.DoesNotExist:
-            msg="Votre vote n'a pas été pris en compte :("
+            msg="Pin not found"
             return HttpResponse(msg)
     else:
-        msg="Votre vote n'a pas été pris en compte :("
+        msg="Not a POST"
         return HttpResponse(msg)

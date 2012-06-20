@@ -1,0 +1,260 @@
+{% autoescape off %}
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="/static/css/style_pinalyzer.css"/>
+    <link href='http://fonts.googleapis.com/css?family=Belleza' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
+    
+    <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
+</head>
+
+<script type="text/javascript">
+
+	
+	var limit=5000; // Waiting time for the next couple
+	var time=limit;
+	var interval; // Interval object
+	
+	function getLarger(url){
+		return url.substr(0,url.length-5) +'f'+url.substr(url.length-4,url.length)
+	}
+	
+	function getScale(w1,h1,w2,h2){
+
+		d=$("#main").width()-($("#pin1").outerWidth(true)+$("#pin2").outerWidth(true)-$("#pin1").width()-$("#pin2").width()) -100;
+		s1=d/(w1+h1*w2/h2);
+		s2=s1*h1/h2;
+		res= new Object();
+		res.w1=parseInt(s1*w1);
+		res.h1=parseInt(s1*h1);
+		res.w2=parseInt(s2*w2);
+		res.h2t=parseInt(s2*h2);
+		return res;
+	}
+	
+	function rotate(element, d){ // element is a jquery object ( get with $(...) )
+		element.css({'transform':'rotate('+d+'deg)',
+		'-ms-transform':'rotate('+d+'deg)', /* IE 9 */
+		'-moz-transform':'rotate('+d+'deg)', /* Firefox */
+		'-webkit-transform':'rotate('+d+'deg)', /* Safari and Chrome */
+		'-o-transform':'rotate('+d+'deg)', /* Opera */
+		});	
+	}
+	
+	function rotateRandom(element, lower, higher){
+		d=Math.floor(Math.random()*(higher-lower) +lower);
+		rotate(element,d);
+	}
+
+		
+	function setPins(){
+		category=$("select").attr('value');
+		$.ajax({
+			url:"",
+			cache:false,
+			data: {category:category},
+			success:function(result, textStatus, jqXHR){
+				
+				if (result['status']=='OK'){			
+					url1=getLarger(result['data'][0]['pin'].url);
+					url2=getLarger(result['data'][1]['pin'].url);	
+					res=getScale(result['data'][0]['width'],result['data'][0]['height'],result['data'][1]['width'],result['data'][1]['height']);
+					
+					$("#pin1").attr({
+						src :url1,
+						pin_id:result['data'][0]['pin'].pin_id,
+						
+					}).css({width: res.w1, height: res.h1});
+					
+					$("#pin2").attr({
+						src :url2,
+						pin_id:result['data'][1]['pin'].pin_id,
+					}).css({width: res.w2, height: res.h2});
+					
+					
+					// display the pins only if they are both loaded
+					pin_loaded=0;
+					$("img").load(function(){
+						pin_loaded++;
+						if (pin_loaded ==2){
+							rotateRandom($("#pin1"),-3,3);
+							rotateRandom($("#pin2"),-3,3);
+							$("img").css('opacity','1');
+							startChrono();
+						}
+					});
+					
+					
+					
+					
+
+					$("img").on('click',function() {
+						
+						/*$("img").off('click');
+						stopChrono();
+						clicked=$(this);
+						fadeout=false;
+						$("img").fadeOut('fast', function(){
+							if (!fadeout) {
+								fadeout=true;
+							}
+							else{
+								sendResult(clicked.attr('pin_id'));
+								setPins();
+							}
+							
+						});
+						*/
+						
+						$("img").off('click');
+						clicked=$(this);
+						clearInterval(interval); // Stop the chrono
+						if (this.id=="pin1"){
+							$("#pin2").animate({ opacity: 0 },400, function(){
+								$("img").css('opacity','0');
+								sendResult(clicked.attr('pin_id'));
+								setPins();
+							});
+						}
+						else{
+							$("#pin1").animate({ opacity: 0 },400, function(){
+								$("img").css('opacity','0');
+								sendResult(clicked.attr('pin_id'));
+								setPins();
+							});
+						}
+						
+					});
+					
+				}
+				else{
+					alert(result['data']);
+				}
+				
+			},
+		})
+	}
+	
+	function sendResult(choice){
+		pin1_id=$("#pin1").attr("pin_id");
+		pin2_id=$("#pin2").attr("pin_id");
+		$.ajax({
+			type: "POST",
+			url: "savematch",
+			data: {pin1_id: pin1_id , pin2_id: pin2_id, choice:choice,}
+		});
+	}
+	
+	jQuery(document).ajaxSend(function(event, xhr, settings) {
+	    function getCookie(name) {
+	        var cookieValue = null;
+	        if (document.cookie && document.cookie != '') {
+	            var cookies = document.cookie.split(';');
+	            for (var i = 0; i < cookies.length; i++) {
+	                var cookie = jQuery.trim(cookies[i]);
+	                // Does this cookie string begin with the name we want?
+	                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+	                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+	                    break;
+	                }
+	            }
+	        }
+	        return cookieValue;
+	    }
+	    function sameOrigin(url) {
+	        // url could be relative or scheme relative or absolute
+	        var host = document.location.host; // host + port
+	        var protocol = document.location.protocol;
+	        var sr_origin = '//' + host;
+	        var origin = protocol + sr_origin;
+	        // Allow absolute or scheme relative URLs to same origin
+	        return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+	            (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+	            // or any other URL that isn't scheme relative or absolute i.e relative.
+	            !(/^(\/\/|http:|https:).*/.test(url));
+	    }
+	    function safeMethod(method) {
+	        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+	    }
+
+	    if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
+	        xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+	    }
+	});
+	
+
+	
+	function startChrono(){
+		time=limit;
+		step=10;
+		
+		$(function() {
+			$( "#progressbar" ).progressbar({
+				value: 100
+			});
+		});
+		interval=setInterval(function(){
+			time-=step;
+			$(function() {
+				$( "#progressbar" ).progressbar({
+					value: time/limit*100
+				});
+			});
+			
+			
+			if(time<=0){
+				clearInterval(interval);
+				fadeout=false;
+				$("img").off('click').animate({ opacity: 0 },700, function(){
+					if (!fadeout){
+						fadeout=true;
+					}
+					else{
+						setPins();
+					}
+					
+				});
+			}
+			
+		},step);
+		
+	}
+
+
+	$(document).ready(function() {
+		setPins();
+		$("select").change(function(){
+			$("img").off('click');
+			time=0;
+			clearInterval(interval);
+			setPins();
+		});
+	});	
+</script>
+
+<body >
+	<h1>Which pin do you prefer ?</h1>
+	<div id="select">
+	<select>
+		<option value="all">All</option>
+		{% for cat in cat_list %}
+ 		<option value="{{cat.category_id}}">{{cat.category_name}}</option>
+ 		{% endfor %}
+  
+	</select>
+	</div>
+	<div id="progressbar" style="width:150px; height:20px"></div>
+	<p> Click on the pin you prefer </p>
+	<div id="main">
+		<img id="pin1">
+		<img id="pin2">
+	</div>
+	
+
+		
+		
+</body>
+{% endautoescape %}

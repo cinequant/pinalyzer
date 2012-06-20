@@ -1,0 +1,67 @@
+#main{
+margin-left: auto;
+margin-right: auto;
+width: 1000px;
+}
+
+#pin1, #pin2 {
+display: inline;
+margin: 20px 10px;
+cursor: pointer;
+}
+
+h1{
+	text-align: center;
+	color: rgb(190,20,5);
+	font-family: 'Pacifico', cursive;
+	font-size: 4em;
+	font-weight: normal;
+}
+
+#select{
+	margin: 0 auto;
+	width: 150px;
+	margin-bottom: 30px;
+}
+
+#chrono{
+	margin: 0 auto;
+	width: 40px;
+}
+body{
+	font-family:"helvetica neue",arial,sans-serif;
+	background: #f7f5f5 url(../img/paper.jpg) repeat;
+	font-family: Belleza, san-serif;
+}
+
+img{
+	padding: 20px 20px;
+	background-color:white;
+	box-shadow: 2px 2px 20px rgba(0,0,0,0.2);
+}
+
+#pin1{
+	transform:rotate(2deg);
+	-ms-transform:rotate(2deg); /* IE 9 */
+	-moz-transform:rotate(2deg); /* Firefox */
+	-webkit-transform:rotate(2deg); /* Safari and Chrome */
+	-o-transform:rotate(2deg); /* Opera */
+}
+
+#pin2{
+	transform:rotate(-3deg);
+	-ms-transform:rotate(-3deg); /* IE 9 */
+	-moz-transform:rotate(-3deg); /* Firefox */
+	-webkit-transform:rotate(-3deg); /* Safari and Chrome */
+	-o-transform:rotate(-3deg); /* Opera */
+}
+#progressbar{
+	margin-left: auto;
+	margin-right: auto;
+	width:120px;
+	height:15px
+}
+
+p{
+	text-align: center;
+}
