@@ -2,6 +2,12 @@
 <!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
+    <meta name="robots" content="all">
+	<meta name="description" content="Pinalyzer, a Pinterest analytics tool. Your best friend to fully enjoy Pinterest.">
+	<meta name="keywords" content="pinterest, analytics, marketing, pinterest tool, tool, influence">
+	
+	
+ 	<title>Pinalyzer, Pinterest analytics tool</title>
     <link rel="stylesheet" type="text/css" href="/static/css/style_pinalyzer.css"/>
     <link href='http://fonts.googleapis.com/css?family=Belleza' rel='stylesheet' type='text/css'>
     <link href='http://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
@@ -17,6 +23,15 @@
 	var limit=5000; // Waiting time for the next couple
 	var time=limit;
 	var interval; // Interval object
+	
+	var html_battle='<div id="progressbar" style="width:150px; height:20px"></div>'
+		+'<p> Click on the pin you prefer </p>'
+		+'<div id="main">'
+			+'<img id="pin1" class="battle">'
+			+'<img id="pin2" class="battle">'
+		+'</div>';
+		
+	var html_ranking='<table border=0></table>';
 	
 	function getLarger(url){
 		return url.substr(0,url.length-5) +'f'+url.substr(url.length-4,url.length)
@@ -58,94 +73,114 @@
 			data: {category:category},
 			success:function(result, textStatus, jqXHR){
 				
-				if (result['status']=='OK'){			
+				if (result['status']=='OK'){
+					
 					url1=getLarger(result['data'][0]['pin'].url);
-					url2=getLarger(result['data'][1]['pin'].url);	
+					url2=getLarger(result['data'][1]['pin'].url);
 					res=getScale(result['data'][0]['width'],result['data'][0]['height'],result['data'][1]['width'],result['data'][1]['height']);
 					
 					$("#pin1").attr({
-						src :url1,
+						src :url1+'?'+new Date().getMilliseconds(),
 						pin_id:result['data'][0]['pin'].pin_id,
 						
 					}).css({width: res.w1, height: res.h1});
 					
 					$("#pin2").attr({
-						src :url2,
+						src :url2+'?'+new Date().getMilliseconds(),
 						pin_id:result['data'][1]['pin'].pin_id,
 					}).css({width: res.w2, height: res.h2});
 					
 					
+					
 					// display the pins only if they are both loaded
+					
+					$(".battle").off();
 					pin_loaded=0;
-					$("img").load(function(){
+					$(".battle").load(function(){
 						pin_loaded++;
+						
 						if (pin_loaded ==2){
 							rotateRandom($("#pin1"),-3,3);
 							rotateRandom($("#pin2"),-3,3);
-							$("img").css('opacity','1');
+							$(".battle").css('opacity','1');
 							startChrono();
 						}
 					});
 					
-					
-					
-					
-
-					$("img").on('click',function() {
-						
-						/*$("img").off('click');
-						stopChrono();
-						clicked=$(this);
-						fadeout=false;
-						$("img").fadeOut('fast', function(){
-							if (!fadeout) {
-								fadeout=true;
-							}
-							else{
-								sendResult(clicked.attr('pin_id'));
-								setPins();
-							}
-							
-						});
-						*/
-						
-						$("img").off('click');
+					$(".battle").on('click',function() {				
+						$(".battle").off('click');
 						clicked=$(this);
 						clearInterval(interval); // Stop the chrono
 						if (this.id=="pin1"){
 							$("#pin2").animate({ opacity: 0 },400, function(){
-								$("img").css('opacity','0');
-								sendResult(clicked.attr('pin_id'));
-								setPins();
+								$(".battle").css('opacity','0');
+								sendResult(clicked.attr('pin_id'),setPins);
 							});
 						}
 						else{
 							$("#pin1").animate({ opacity: 0 },400, function(){
-								$("img").css('opacity','0');
-								sendResult(clicked.attr('pin_id'));
-								setPins();
+								$(".battle").css('opacity','0');
+								sendResult(clicked.attr('pin_id'),setPins);
 							});
 						}
-						
 					});
 					
 				}
 				else{
 					alert(result['data']);
 				}
-				
 			},
 		})
 	}
 	
-	function sendResult(choice){
+	function sendResult(choice,callback){
 		pin1_id=$("#pin1").attr("pin_id");
 		pin2_id=$("#pin2").attr("pin_id");
 		$.ajax({
 			type: "POST",
 			url: "savematch",
-			data: {pin1_id: pin1_id , pin2_id: pin2_id, choice:choice,}
+			data: {pin1_id: pin1_id , pin2_id: pin2_id, choice:choice,},
+			success: callback,
 		});
+		
+	}
+	
+	function setRanking(){
+		category=$("select").attr('value');
+		$.get("ranking",{category:category}, function(result){
+    		if (result.status=="OK"){
+    			$("table").css('display','none');
+    			for (var i=0; i<result.data.length; i++){
+    				pin=result.data[i].info;
+    				var html='<tr>';
+    				html+='<td><div>'+(i+1)+'</div></td>';
+        			html+='<td><a href="http://pinterest.com/pin/'+pin.pin_id+'"><img src="'+pin.url+'"/></a></td>';
+        			html+='<td><p><a href=http://pinterest.com/'+pin.pinner_id+'">'+pin.pinner_name+'</a> onto <a href="http://pinterest.com/'+pin.pinner_id+'/'+pin.board_id+'">'+pin.board_name+'</a></p> </td>';
+ 
+        			html+='</tr>';
+        			$("table").append(html);
+        			
+    			}
+    			$("table tr:even").css('background-color','rgba(255,255,215,0.9)');
+    			$("table tr:odd").css('background-color','rgba(255,255,255,0)');
+    			$("table").css('display','table');
+    			
+    			$('tr').mouseenter(function(){
+    				$(this).css('background-color','rgb(255,129,1)');
+    			})
+    			
+    			$('tr:even').mouseleave(function(){
+    				$(this).css('background-color','rgba(255,255,215,1)');
+    			})
+    			
+    			$('tr:odd').mouseleave(function(){
+    				$(this).css('background-color','rgba(255,255,255,0)');
+    			})
+    		}
+    		else{
+    			alert(result['data']);
+    		}
+    	});
 	}
 	
 	jQuery(document).ajaxSend(function(event, xhr, settings) {
@@ -208,7 +243,7 @@
 			if(time<=0){
 				clearInterval(interval);
 				fadeout=false;
-				$("img").off('click').animate({ opacity: 0 },700, function(){
+				$(".battle").off('click').animate({ opacity: 0 },700, function(){
 					if (!fadeout){
 						fadeout=true;
 					}
@@ -222,22 +257,98 @@
 		},step);
 		
 	}
+	
+	
 
-
-	$(document).ready(function() {
+	function displayBattle(){
+		$("body").append(html_battle);	
 		setPins();
 		$("select").change(function(){
-			$("img").off('click');
-			time=0;
 			clearInterval(interval);
+			$(".battle").off('click');
+			time=0;
 			setPins();
 		});
-	});	
+	}
+	
+	function displayRanking(){
+		$("body").append(html_ranking);
+		setRanking();
+		
+		$("tr").click(function(){
+			alert('click');
+		})
+		
+		
+		$("select").change(function(){
+			resetPage();
+			displayRanking();
+		});
+	}
+	
+	function resetPage(){
+		clearInterval(interval);
+		$("#main img").off();
+		$("select").off().nextAll().remove();
+		
+	}
+
+	$(document).ready(function() {
+		$("nav a").click(function(event){
+			event.preventDefault();
+			resetPage();
+			if(this.id=="battle_menu"){
+				displayBattle();
+			}
+			else{
+				displayRanking();
+			}
+		})
+		
+		displayBattle();
+		
+		$("body").off();	
+	});
+	
+	
+</script>
+
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-32139124-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
 </script>
 
 <body >
+	<script type="text/javascript">
+		/*$(".lrdiscoverwidget").css({
+			position:'absolute',
+			left:'0px',
+			top:'-110px',
+		});*/
+	</script>
+	
+	<div id="logo" style="width:536px;margin:0 auto;">
+<img style="margin:0 auto;" src="/static/img/pinterest.png" alt="Pinalyzer"/>
+
+  <div style="clear:both"></div>
+</div>
+	<div rel="I90W93HI" class="lrdiscoverwidget" data-logo="on" data-background="off" data-share-url="www.pinalyzer.com/" data-css=""></div>
+	<script type="text/javascript" src="http://launchrock-ignition.s3.amazonaws.com/ignition.1.1.js"></script>
+
 	<h1>Which pin do you prefer ?</h1>
-	<div id="select">
+	
+	<nav>
+		<a id="battle_menu">Battle</a>
+		<a id="ranking_menu">Ranking</a>
+	</nav>
+	
 	<select>
 		<option value="all">All</option>
 		{% for cat in cat_list %}
@@ -245,16 +356,6 @@
  		{% endfor %}
   
 	</select>
-	</div>
-	<div id="progressbar" style="width:150px; height:20px"></div>
-	<p> Click on the pin you prefer </p>
-	<div id="main">
-		<img id="pin1">
-		<img id="pin2">
-	</div>
-	
-
-		
 		
 </body>
 {% endautoescape %}

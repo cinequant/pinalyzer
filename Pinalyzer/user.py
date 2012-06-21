@@ -107,7 +107,7 @@ def fetchPin(limit=1,category=None):
         r=http.request('GET',url+'lazy=1&page='+str(page))
 
         for pin_div in re.findall(re_pin_div,r.data):
-            pinId=searchPinId(pin_div)
+            pinId=unicode(searchPinId(pin_div))
             pinUrl=searchPinUrl(pin_div)
             pinnerId,pinnerName,boardId,boardName=searchPinMore(pin_div)
             
@@ -128,7 +128,6 @@ def addressToLatLng(address):
     output=loads(json_output)
     
     if output['status'] != "OK":
-        
         raise Exception('status ='+output['status'])
     
     return (output['results'][0]['geometry']['location']['lat'],output['results'][0]['geometry']['location']['lng'])
@@ -242,8 +241,7 @@ class User:
                 group_list[j].append(f_list[i])    
                 prec_lat=f_list[i][0].lat 
                 prec_lng=f_list[i][0].lng
-        return group_list
-                
+        return group_list        
             
         
     def getFollowersJSON(self):
@@ -255,3 +253,4 @@ class User:
    
     
 ## test ##
+

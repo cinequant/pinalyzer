@@ -11,9 +11,6 @@ import random
 from user import User, getDim
 from django_json import DjangoJSONEncoder
 
-
-
-
 def index(request):
     try:
         user_id=request.REQUEST['user_id']
@@ -25,41 +22,76 @@ def index(request):
     return render_to_response('map/index.html',{'group_list':dumps(group_list,cls=DjangoJSONEncoder)})
 
 def ranking(request):
-    pin_list=PinModel.objects.all().order_by('-score')
-    print len(pin_list)
-    return render_to_response('map/images.html',{'pin_list':pin_list})
+    if request.is_ajax() and request.method =='GET':
+        
+        try:
+            cat=request.GET['category']
+            try:
+                if cat=='all':
+                    ranking_q=PinModel.objects.all()
+                else:
+                    cat_model=CategoryModel.objects.get(category_id=cat)
+                    ranking_q=cat_model.pinmodel_set.all()
+            except CategoryModel.DoesNotExist:
+                d={'status': 'ERR','data':'Error: This category does not exist on the database '}
+                data = dumps(d,cls=DjangoJSONEncoder)
+                return HttpResponse(data, mimetype='application/json')
+
+                  
+        except KeyError:
+            ranking_q=PinModel.objects.all()
+        
+        if len(ranking_q)>0:
+            ranking_q=ranking_q.order_by('-score')[:10]
+            ranking_list=[]
+            for pin in ranking_q:
+                w,h=getDim(pin.url)
+                ranking_list.append({'info': pin,'width':w,'height':h})
+            
+            data=dumps({'status':'OK','data':ranking_list},cls=DjangoJSONEncoder)
+            return HttpResponse(data, mimetype='application/json')
+        else:
+            d={'status': 'ERR','data':'Error: No pins in this category'}
+            data = dumps(d,cls=DjangoJSONEncoder)
+            return HttpResponse(data, mimetype='application/json')
+    return render_to_response('map/images.html')
 
 @ensure_csrf_cookie
 def vote(request):
     if request.is_ajax() and request.method== 'GET':
+        
         # Select all pins in a given category
         try:
             cat=request.GET['category']
             try:
                 if cat=='all':
-                    pin_list=PinModel.objects.all()
+                    pin_q=PinModel.objects.all()
                 else:
                     cat_model=CategoryModel.objects.get(category_id=cat)
-                    pin_list=cat_model.pinmodel_set.all()
+                    pin_q=cat_model.pinmodel_set.all()
             except CategoryModel.DoesNotExist:
                 d={'status': 'ERR','data':'Error: This category does not exist on the database '}
                 data = dumps(d,cls=DjangoJSONEncoder)
                 return HttpResponse(data, mimetype='application/json')
                   
         except KeyError:
-            pin_list=PinModel.objects.all()
-        
-           
-        
-        # Pick 2 pins   
-        request.session.modified = True 
+            pin_q=PinModel.objects.all()
+             
+          
         if 'viewed_list' not in request.session :
             request.session['viewed_list']=[]
-
-        pin_list=pin_list.order_by('-match').exclude(pin_id__in=request.session['viewed_list'])
+            
+        if len(pin_q)>1:
+            
+            # exclude the pins already seen    
+            pin_list=pin_q.exclude(pin_id__in=request.session['viewed_list'])
         
-        # if there are at least 2 pins not in the viewed list
-        if len(pin_list)>1:
+            if len(pin_list)<2: # if all pins are viewed
+                request.session['viewed_list']=[]
+                pin_list=pin_q
+                
+            pin_list=pin_list.order_by('-match')
+            
             i=int(random.random()*len(pin_list)/5)
             j=int(random.random()*len(pin_list)/5)
             if i==j:
@@ -67,8 +99,11 @@ def vote(request):
                     j+=1
                 else:
                     j-=1
-            
-                      
+                    
+                    
+            request.session.modified = True
+            request.session['viewed_list'].append(pin_list[i])
+            request.session['viewed_list'].append(pin_list[j])
             # Send the 2 picked pins + dimension information
             w1,h1=getDim(pin_list[i].url)
             w2,h2=getDim(pin_list[j].url)
@@ -102,11 +137,7 @@ def savematch(request):
             
             pin1.updateScore(pin1.pin_id==choice, diff)
             pin2.updateScore(pin2.pin_id==choice,-diff)
-            
-            request.session['viewed_list'].append(pin1_id)
-            request.session['viewed_list'].append(pin2_id)
-            
-            
+    
             msg="OK"
             return HttpResponse(msg)
         
@@ -116,3 +147,5 @@ def savematch(request):
     else:
         msg="Not a POST"
         return HttpResponse(msg)
+    
+    

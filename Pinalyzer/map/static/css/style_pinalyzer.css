@@ -1,43 +1,41 @@
 #main{
 margin-left: auto;
 margin-right: auto;
-width: 1000px;
-}
-
-#pin1, #pin2 {
-display: inline;
-margin: 20px 10px;
-cursor: pointer;
+width: 900px;
 }
 
 h1{
 	text-align: center;
 	color: rgb(190,20,5);
 	font-family: 'Pacifico', cursive;
-	font-size: 4em;
+	font-size: 25px;
 	font-weight: normal;
+	margin-top: 40px;
+	postion:fixed;
 }
 
 #select{
-	margin: 0 auto;
-	width: 150px;
-	margin-bottom: 30px;
+	margin: 3px auto;
+	display: table;
 }
 
-#chrono{
-	margin: 0 auto;
-	width: 40px;
+select{
+	display:block;
+	margin: 50px auto 5px auto;;
+	width:150px;
 }
 body{
-	font-family:"helvetica neue",arial,sans-serif;
 	background: #f7f5f5 url(../img/paper.jpg) repeat;
 	font-family: Belleza, san-serif;
 }
 
-img{
+.battle{
 	padding: 20px 20px;
 	background-color:white;
 	box-shadow: 2px 2px 20px rgba(0,0,0,0.2);
+	display: inline;
+	margin: 0px 10px;
+	cursor: pointer;
 }
 
 #pin1{
@@ -56,12 +54,78 @@ img{
 	-o-transform:rotate(-3deg); /* Opera */
 }
 #progressbar{
-	margin-left: auto;
-	margin-right: auto;
+	margin: 0px auto;
+	padding: 0px 0px;
+	
 	width:120px;
 	height:15px
 }
 
+table{
+	margin: 3px auto;
+	width: 800px;
+ 	padding: 20px 20px;
+ 	border-collapse: collapse;
+}
+
+tr{
+	border-width: 0px 0px;
+	border-style: solid;
+	border-color: black;	
+}
+
+td p{
+	text-align: center;
+}
 p{
 	text-align: center;
+}
+
+nav{
+	margin: 10px auto;
+	display:table;
+	padding:0px 60px;
+	border-style: solid;
+	border-color: black;
+	border-width: thin 0px;
+}
+
+nav>a{
+	padding: 5px 10px;
+	margin:1px 3px;
+	cursor: pointer;
+	display: inline-block;
+	
+}
+
+nav>a:hover {
+	color: red;
+}
+
+td:first-child{
+	font-size: 50px;
+}
+
+table a{
+	color: rgb(50,50,50);
+	text-decoration:none;
+}
+
+table a:hover{
+	color: rgb(50,50,50);
+	text-decoration:underline;
+}
+
+td:first-child div{
+	text-align:center;	
+}
+
+.selected{
+	background-color:rgba(200,200,250,1);
+}
+
+.lrdiscoverwidget{
+	position: absolute;
+	top: -20px;
+	left: 20px;
 }

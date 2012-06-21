@@ -6,4 +6,3 @@ def vider():
         x.score=0
         x.match=0
         x.save()
-        
