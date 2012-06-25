@@ -1,0 +1,7 @@
+body {
+    background: no-repeat url(paper.jpg) 0 0;
+    background-repeat: repeat;
+    font-family: sans-serif;
+    color: #444444;
+    font-size:18px;
+}  

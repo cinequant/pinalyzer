@@ -1,12 +1,16 @@
+html {
+	overflow-y: scroll;
+}
+
 #main{
 margin-left: auto;
 margin-right: auto;
-width: 900px;
+width: 850px;
 }
 
 h1{
 	text-align: center;
-	color: rgb(190,20,5);
+	color: rgb(204,34,37);
 	font-family: 'Pacifico', cursive;
 	font-size: 25px;
 	font-weight: normal;
@@ -21,7 +25,7 @@ h1{
 
 select{
 	display:block;
-	margin: 50px auto 5px auto;;
+	margin: 30px auto 5px auto;;
 	width:150px;
 }
 body{
@@ -63,7 +67,7 @@ body{
 
 table{
 	margin: 3px auto;
-	width: 800px;
+	width: 700px;
  	padding: 20px 20px;
  	border-collapse: collapse;
 }
@@ -120,12 +124,8 @@ td:first-child div{
 	text-align:center;	
 }
 
-.selected{
-	background-color:rgba(200,200,250,1);
-}
-
 .lrdiscoverwidget{
 	position: absolute;
-	top: -20px;
-	left: 20px;
+	top: -100px;
+	left: 5px;
 }

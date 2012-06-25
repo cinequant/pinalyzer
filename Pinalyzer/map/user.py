@@ -8,29 +8,26 @@
 
 from django.db import  IntegrityError
 from django.utils.simplejson import loads, dumps
-from map.models import UserModel, LocationModel,CategoryModel
+from models import UserModel, LocationModel,CategoryModel, PinModel
 
 import cStringIO
 import Image
 import urllib3
 import re
 import string
-from bs4 import BeautifulSoup
 
 # the person div reg exp('/user_id/followers/' or '/user_id/following/')
 re_html_pers=re.compile('<div class="person">.*?<div class="PersonPins">',re.DOTALL)
-
 # Person informations (id,name,photo,location)
 re_user=re.compile('class="PersonImage ImgLink" style="background-image: url\((?P<photo>.+?)\)">'+'.*?'
                    +'<h4><a href="/(?P<id>.+?)/">(?P<name>.+?)</a></h4>'+'.*?'
                    +'((<span class="icon location"></span>(?P<location>.+?(?=\n)))|PersonPins">)', re.DOTALL) 
-
 # Marker value ('pinterest.com/user_id/followers/' or 'pinterest.com/user_id/following/')
 re_follow_marker=re.compile('\.pageless\({(.*?)"marker": (?P<marker>.+?)(?=\n)',re.DOTALL)
 
+
 # The pin div reg exp
 re_pin_div=re.compile('<div class="pin".*?(?=<div class="pin")',re.DOTALL)
-
 # Pin informations ('popular' or '/all/search?category=...'
 re_pin_pinId=re.compile('<a href="/pin/(?P<pinId>[0-9]+?)/" class="PinImage ImgLink">')
 re_pin_pinUrl=re.compile('<img src="(?P<pinUrl>.*?)"')
@@ -38,6 +35,9 @@ re_pin_more=re.compile('<a href="/(?P<pinnerId>.+?)/">(?P<pinnerName>.+?)</a> on
 
 re_cat_div=re.compile('<div id="CategoriesBar" >.*?</div>',re.DOTALL)
 re_cat=re.compile('<a href="/all/\?category=(?P<cat_id>.+?)" >(?P<cat_name>.+?)</a>')
+
+
+
 
 
 http = urllib3.PoolManager()
@@ -91,8 +91,9 @@ def fetchCategories():
     except IntegrityError:
         print 'Category already present in the database'
     
-        
-    
+
+def larger_pin_url(url):
+    return url[:-5]+'f'+url[-4:]
 
 def fetchPin(limit=1,category=None):
     
@@ -111,14 +112,15 @@ def fetchPin(limit=1,category=None):
             pinUrl=searchPinUrl(pin_div)
             pinnerId,pinnerName,boardId,boardName=searchPinMore(pin_div)
             
-            print (pinId, pinUrl, pinnerId, pinnerName, boardId, boardName)
             if pinUrl != 'http://passets-ec.pinterest.com/images/VideoIndicator.png':
-                
+                pinUrl=larger_pin_url(pinUrl)
+                w,h=getDim(pinUrl)
+
                 try:
-                    cat.pinmodel_set.create(pin_id=pinId,url=pinUrl,pinner_id=pinnerId,pinner_name=pinnerName,board_id=boardId,board_name=boardName)
-                        
+                    cat.pinmodel_set.create(pin_id=pinId,url=pinUrl,pinner_id=pinnerId,pinner_name=pinnerName,board_id=boardId,board_name=boardName,width=w,height=h)            
                 except IntegrityError:
                     print 'Pin already in the database'
+
 
 # Calculate from an adress, the corresponding geographic coordinates ( a (lat,lng) couple ), using geocoding service ( google map api).
 def addressToLatLng(address):
@@ -139,6 +141,24 @@ def getDim(url):
     img=Image.open(im)
     return img.size
 
+def getNewScore(score_pin1, score_pin2, pin1_win):
+    f=400.0 # Coef pour étendre la plage de valeur
+    k=10
+    diff1=max(min(score_pin1-score_pin2, 400),-400)
+    diff2=-diff1
+    p1=1.0/(1.0+pow(10.0,-float(diff1)/f))
+    p2=1.0/(1.0+pow(10.0,-float(diff2)/f))
+    new_score_pin1=int(score_pin1 + k*(float(pin1_win)-p1))
+    new_score_pin2=int(score_pin2 + k*(float(not pin1_win)-p2))
+    return (new_score_pin1,new_score_pin2)
+
+def resetScore():
+    for p in PinModel.objects.all():
+        p.match=0
+        p.score=0
+        p.save()
+    
+
 class User:
     def __init__(self,user_id,location=None, name=None, photo_url=None):
         self.id=user_id # User id in pinterest, each user have a unique id
@@ -147,7 +167,7 @@ class User:
         self.location=location #User location , a string like "Paris,France"
         self.lat=None # Latitude
         self.lng=None # Longitude
-        self.followers=[] 
+        self.followers=[]
         self.following=[]
         
     def fetchFollow(self,follow, limit):
@@ -182,13 +202,6 @@ class User:
     def fetchFollowing(self,limit=5):
         self.following=self.fetchFollow('following',limit)
         return self.following
-    
-    def searchUser(self,user_id):    
-        url="http://pinterest.com/search/people/?q="+str(user_id)
-        r=http.request ('GET',url)
-        soup = BeautifulSoup(r.data)
-        user_list= soup.find_all('div',attrs={'class':'pin user'})
-        return user_list
     
     def calcLatLng(self):
         # Get the user or create a new one.

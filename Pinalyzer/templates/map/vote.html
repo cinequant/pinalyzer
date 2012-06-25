@@ -1,13 +1,17 @@
 {% autoescape off %}
 <!DOCTYPE html>
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="robots" content="all">
 	<meta name="description" content="Pinalyzer, a Pinterest analytics tool. Your best friend to fully enjoy Pinterest.">
 	<meta name="keywords" content="pinterest, analytics, marketing, pinterest tool, tool, influence">
-	
-	
  	<title>Pinalyzer, Pinterest analytics tool</title>
+ 	
+ 	
+ 	<script type="text/javascript">var switchTo5x=true;</script>
+    <script type="text/javascript" src="http://w.sharethis.com/button/buttons.js"></script>
+    <script type="text/javascript" src="http://s.sharethis.com/loader.js"></script>
     <link rel="stylesheet" type="text/css" href="/static/css/style_pinalyzer.css"/>
     <link href='http://fonts.googleapis.com/css?family=Belleza' rel='stylesheet' type='text/css'>
     <link href='http://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
@@ -33,8 +37,8 @@
 		
 	var html_ranking='<table border=0></table>';
 	
-	function getLarger(url){
-		return url.substr(0,url.length-5) +'f'+url.substr(url.length-4,url.length)
+	function getSmaller(url){
+		return url.substr(0,url.length-5) +'b'+url.substr(url.length-4,url.length)
 	}
 	
 	function getScale(w1,h1,w2,h2){
@@ -75,19 +79,19 @@
 				
 				if (result['status']=='OK'){
 					
-					url1=getLarger(result['data'][0]['pin'].url);
-					url2=getLarger(result['data'][1]['pin'].url);
-					res=getScale(result['data'][0]['width'],result['data'][0]['height'],result['data'][1]['width'],result['data'][1]['height']);
+					url1=result.data[0].url;
+					url2=result.data[1].url;
+					res=getScale(result.data[0].width, result.data[0].height, result.data[1].width, result.data[1].height);
 					
 					$("#pin1").attr({
 						src :url1+'?'+new Date().getMilliseconds(),
-						pin_id:result['data'][0]['pin'].pin_id,
+						pin_id:result.data[0].pin_id,
 						
 					}).css({width: res.w1, height: res.h1});
 					
 					$("#pin2").attr({
 						src :url2+'?'+new Date().getMilliseconds(),
-						pin_id:result['data'][1]['pin'].pin_id,
+						pin_id:result.data[1].pin_id,
 					}).css({width: res.w2, height: res.h2});
 					
 					
@@ -104,30 +108,33 @@
 							rotateRandom($("#pin2"),-3,3);
 							$(".battle").css('opacity','1');
 							startChrono();
+							
+							$(".battle").on('click',function() {				
+								$(".battle").off();
+								clicked=$(this);
+								clearInterval(interval); // Stop the chrono
+								if (this.id=="pin1"){
+									$("#pin2").animate({ opacity: 0 },400, function(){
+										$(".battle").css('opacity','0');
+										sendResult(clicked.attr('pin_id'),setPins);
+									});
+								}
+								else{
+									$("#pin1").animate({ opacity: 0 },400, function(){
+										$(".battle").css('opacity','0');
+										sendResult(clicked.attr('pin_id'),setPins);
+									});
+								}
+							});
 						}
 					});
 					
-					$(".battle").on('click',function() {				
-						$(".battle").off('click');
-						clicked=$(this);
-						clearInterval(interval); // Stop the chrono
-						if (this.id=="pin1"){
-							$("#pin2").animate({ opacity: 0 },400, function(){
-								$(".battle").css('opacity','0');
-								sendResult(clicked.attr('pin_id'),setPins);
-							});
-						}
-						else{
-							$("#pin1").animate({ opacity: 0 },400, function(){
-								$(".battle").css('opacity','0');
-								sendResult(clicked.attr('pin_id'),setPins);
-							});
-						}
-					});
+					
+					
 					
 				}
 				else{
-					alert(result['data']);
+					alert(result.data);
 				}
 			},
 		})
@@ -145,17 +152,21 @@
 		
 	}
 	
-	function setRanking(){
+	function setRanking(perso){
+		if(typeof perso == "undefined") {
+			perso=false;
+		}
+		
 		category=$("select").attr('value');
-		$.get("ranking",{category:category}, function(result){
+		$.get("ranking",{category:category, perso: perso}, function(result){
     		if (result.status=="OK"){
     			$("table").css('display','none');
     			for (var i=0; i<result.data.length; i++){
-    				pin=result.data[i].info;
+    				pin=result.data[i];
     				var html='<tr>';
     				html+='<td><div>'+(i+1)+'</div></td>';
-        			html+='<td><a href="http://pinterest.com/pin/'+pin.pin_id+'"><img src="'+pin.url+'"/></a></td>';
-        			html+='<td><p><a href=http://pinterest.com/'+pin.pinner_id+'">'+pin.pinner_name+'</a> onto <a href="http://pinterest.com/'+pin.pinner_id+'/'+pin.board_id+'">'+pin.board_name+'</a></p> </td>';
+        			html+='<td><a href="http://pinterest.com/pin/'+pin.pin_id+'"><img src="'+getSmaller(pin.url)+'"/></a></td>';
+        			html+='<td><p><a href="http://pinterest.com/'+pin.pinner_id+'">'+pin.pinner_name+'</a> onto <a href="http://pinterest.com/'+pin.pinner_id+'/'+pin.board_id+'">'+pin.board_name+'</a></p> </td>';
  
         			html+='</tr>';
         			$("table").append(html);
@@ -166,7 +177,7 @@
     			$("table").css('display','table');
     			
     			$('tr').mouseenter(function(){
-    				$(this).css('background-color','rgb(255,129,1)');
+    				$(this).css('background-color','rgb(204,34,37)');
     			})
     			
     			$('tr:even').mouseleave(function(){
@@ -223,6 +234,7 @@
 
 	
 	function startChrono(){
+		clearInterval(interval);
 		time=limit;
 		step=10;
 		
@@ -243,7 +255,7 @@
 			if(time<=0){
 				clearInterval(interval);
 				fadeout=false;
-				$(".battle").off('click').animate({ opacity: 0 },700, function(){
+				$(".battle").off().animate({ opacity: 0 },700, function(){
 					if (!fadeout){
 						fadeout=true;
 					}
@@ -271,18 +283,17 @@
 		});
 	}
 	
-	function displayRanking(){
+	function displayRanking(perso){
+		if(typeof perso == "undefined") {
+            perso=false;
+        }
 		$("body").append(html_ranking);
-		setRanking();
-		
-		$("tr").click(function(){
-			alert('click');
-		})
+		setRanking(perso);
 		
 		
 		$("select").change(function(){
 			resetPage();
-			displayRanking();
+			displayRanking(perso);
 		});
 	}
 	
@@ -300,8 +311,11 @@
 			if(this.id=="battle_menu"){
 				displayBattle();
 			}
-			else{
+			else if (this.id=="ranking_menu"){
 				displayRanking();
+			}
+			else{
+				displayRanking(true);
 			}
 		})
 		
@@ -325,28 +339,50 @@
   })();
 </script>
 
+<script>
+    var options={ "publisher": "47dcf93c-33d5-4e59-bb7d-8e759e5088b6", "position": "right", "ad": { "visible": false, "openDelay": 5, "closeDelay": 0}, "chicklets": { "items": ["facebook", "twitter", "email", "sharethis"]}};
+    var st_hover_widget = new sharethis.widgets.hoverbuttons(options);
+</script>
+
 <body >
-	<script type="text/javascript">
-		/*$(".lrdiscoverwidget").css({
-			position:'absolute',
-			left:'0px',
-			top:'-110px',
-		});*/
-	</script>
+
+    <div id="fb-root"></div>
+    <script>
+      // Load the SDK Asynchronously
+      (function(d){
+         var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement('script'); js.id = id; js.async = true;
+         js.src = "//connect.facebook.net/en_US/all.js";
+         ref.parentNode.insertBefore(js, ref);
+       }(document));
+
+      // Init the SDK upon load
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId      : 'YOUR_APP_ID', // App ID
+          channelUrl : '//'+window.location.hostname+'/channel', // Path to your Channel File
+          status     : true, // check login status
+          cookie     : true, // enable cookies to allow the server to access the session
+          xfbml      : true  // parse XFBML
+        });
+      }
+      </script>
 	
 	<div id="logo" style="width:536px;margin:0 auto;">
-<img style="margin:0 auto;" src="/static/img/pinterest.png" alt="Pinalyzer"/>
-
-  <div style="clear:both"></div>
-</div>
+		<img style="margin:0 auto;" src="/static/img/pinterest.png" alt="Pinalyzer"/>
+  		<div style="clear:both"></div>
+	</div>
 	<div rel="I90W93HI" class="lrdiscoverwidget" data-logo="on" data-background="off" data-share-url="www.pinalyzer.com/" data-css=""></div>
 	<script type="text/javascript" src="http://launchrock-ignition.s3.amazonaws.com/ignition.1.1.js"></script>
 
 	<h1>Which pin do you prefer ?</h1>
+	{% csrf_token %}
 	
 	<nav>
 		<a id="battle_menu">Battle</a>
-		<a id="ranking_menu">Ranking</a>
+		<a id="ranking_menu">Overall ranking</a>
+		<a id="persoranking_menu"> Your ranking </a>
 	</nav>
 	
 	<select>
@@ -358,4 +394,5 @@
 	</select>
 		
 </body>
+</html>
 {% endautoescape %}
