@@ -1,4 +1,6 @@
 eclipse.preferences.version=1
 encoding//map/models.py=utf-8
+encoding//map/pin.py=utf-8
+encoding//map/scoring.py=utf-8
 encoding//map/user.py=utf-8
 encoding//map/views.py=utf-8

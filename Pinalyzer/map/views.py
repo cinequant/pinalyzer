@@ -4,11 +4,12 @@ from django.http import HttpResponse
 from django.shortcuts import render_to_response
 from django.shortcuts import render
 from django.utils.simplejson import dumps
-from models import PinModel, CategoryModel
+from models import PinModel, CategoryModel, UserModel
 
 import random
 
-from user import User, getNewScore
+from user import User
+from pin import Pin, Category
 from django_json import DjangoJSONEncoder
 
 def index(request):
@@ -42,27 +43,16 @@ def ranking(request):
 		print type(request.GET['perso'])
 		if request.GET['perso']== u'true':
 			match_list=request.session['match_list']
-			print 'match_list:'
-			print match_list
-			print
-			
 			score={}
 			
 			for t in match_list:
 				pin1,pin2,choice=t
 				score.setdefault(pin1,0)
 				score.setdefault(pin2,0)
-				score[pin1], score[pin2]=getNewScore(score[pin1],score[pin2], choice==pin1)
+				score[pin1], score[pin2]=Pin.getNewScore(score[pin1],score[pin2], choice==pin1)
 			
-			print 'score dict:'
-			print score
-			print
 			ranking_list=list(ranking_q.filter(pin_id__in=score.keys()))
 			ranking_list.sort(key=lambda pin_model: -score[pin_model.pin_id])
-			print 'ranking_list:'
-			print ranking_list
-			print
-			
 			data=dumps({'status':'OK','data':ranking_list},cls=DjangoJSONEncoder)
 			return HttpResponse(data, mimetype='application/json')
 		
@@ -151,7 +141,7 @@ def savematch(request):
 			pin1=PinModel.objects.get(pin_id=pin1_id)
 			pin2=PinModel.objects.get(pin_id=pin2_id)
 			
-			pin1.score, pin2.score=getNewScore(pin1.score,pin2.score, pin1_id==choice)
+			pin1.score, pin2.score=Pin.getNewScore(pin1.score,pin2.score, pin1_id==choice)
 			pin1.save()
 			pin2.save()
 			
@@ -167,4 +157,20 @@ def savematch(request):
 	else:
 		msg="Not a POST"
 		return HttpResponse(msg)
+	
+def get_scoring(request):
+	if request.method =='POST':
+		user_id=request.POST['user_id']
+		u=User(user_id)
+		u.fetchScoring()
+		user=u.saveDB()
+		return HttpResponse(dumps(user,cls=DjangoJSONEncoder), mimetype='application/json')
+		
+	
+	if request.method =='GET':
+		user_id=request.GET['user_id']
+		user=UserModel.objects.get(user_id=user_id)
+		return HttpResponse(dumps(user,cls=DjangoJSONEncoder), mimetype='application/json')
+			
+		
 	
