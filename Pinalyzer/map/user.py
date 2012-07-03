@@ -6,13 +6,13 @@
 ############################
 from django.db import  IntegrityError
 from django.utils.simplejson import loads, dumps
-from models import UserModel, LocationModel
-from scoring import  Scoring
-
+from models import UserModel, LocationModel, UserStatModel
+from scoring import  Scoring, NotFound
 
 import urllib3
 import re
 import string
+import datetime
 
 # the person div reg exp('/user_id/followers/' or '/user_id/following/')
 re_html_pers=re.compile('<div class="person">.*?<div class="PersonPins">',re.DOTALL)
@@ -57,7 +57,11 @@ def addressToLatLng(address):
     return (output['results'][0]['geometry']['location']['lat'],output['results'][0]['geometry']['location']['lng'])  
 
 class User:
-        
+    
+    re_user=re.compile('<div id="ProfileHeader">.*?'
+                       +'<img src="(?P<url>.*?)".*?'
+                       +'<h1>(?P<name>.*?)</h1>.*?'
+                       +'((<span class="icon location"></span>(?P<location>.+?(?=\n)))|</ul>)', re.DOTALL)
     def __init__(self,user_id,location=None, name=None, photo_url=None):
         self.id=user_id # User id in pinterest, each user have a unique id
         self.name=name # User displayed name
@@ -70,25 +74,57 @@ class User:
         self.lat=None # Latitude
         self.lng=None # Longitude
         
+    def url(self):
+        return 'http://www.pinterest.com/'+str(self.id)
+        
+    def fetchUser(self):
+        r = http.request('GET', self.url())
+        
+        match=re.search(Scoring.re_title,r.data)
+        if match != None and match.group('title') =='Pinterest - 404':
+            print 'title none'
+            raise NotFound
+        
+        match=re.search(User.re_user,r.data)
+        if match == None:
+            raise NotFound
+        self.name=match.group('name')
+        self.location=match.group('location')
+        self.photo_url=match.group('url')
+        
+        
     def fetchScoring(self):
         self.scoring=Scoring(self.id)
         self.scoring.fetch()
+    
+    def saveDB(self): # AVOIR
+        try:
+            u=UserModel.objects.get(user_id=self.id)
+            u.name=self.name
+            u.location=self.location
+            u.photo_url=self.photo_url
+            u.save()
+        except UserModel.DoesNotExist:
+            u=UserModel.objects.create(user_id=self.id,
+                                     name=self.name,
+                                     location=self.location,
+                                     photo_url=self.photo_url)
         
-    def getScore(self):
-        return self.scoring.getScore()
-    
-    def getNbFollowers(self):
-        return self.scoring.nb_followers
-    
-    def getNbPin(self):
-        return self.scoring.nb_pin
-    
-    def saveDB(self):
-        u,created=UserModel.objects.get_or_create(user_id=self.id)
-        u.score=self.getScore()
-        u.nb_followers=self.getNbFollowers()
-        u.nb_pins=self.getNbPin()
-        u.save()
+        if self.scoring !=None:
+            d=datetime.datetime.now()
+            try:
+                u.userstatmodel_set.get(date__year=d.year, date__month=d.month, date__day=d.day)
+            except UserStatModel.DoesNotExist:
+                u.userstatmodel_set.create(date= d,
+                                           nb_board=self.scoring.nb_board,
+                                           nb_pin=self.scoring.nb_pin,
+                                           nb_like=self.scoring.nb_like,
+                                           nb_followers=self.scoring.nb_followers,
+                                           nb_following=self.scoring.nb_following,
+                                           nb_comment=self.scoring.nb_comment,
+                                           nb_repin=self.scoring.nb_repin,
+                                           nb_liked=self.scoring.nb_liked
+                                           )
         return u
         
     def fetchFollow(self,follow, limit):
@@ -188,6 +224,9 @@ class User:
 ## test ##
 if __name__=='__main__':
     u= User('sudzilla')
-    u.fetchScoring()
-    u.saveDB()
+    u.fetchUser()
+    
+    print u.name
+    print u.photo_url
+    print u.location
 

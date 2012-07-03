@@ -1,14 +1,10 @@
-html {
-	overflow-y: scroll;
-}
-
 #main{
 margin-left: auto;
 margin-right: auto;
-width: 850px;
+width: 900px;
 }
 
-h1{
+h1#pinbattle-title{
 	text-align: center;
 	color: rgb(204,34,37);
 	font-family: 'Pacifico', cursive;
@@ -27,10 +23,6 @@ select{
 	display:block;
 	margin: 30px auto 5px auto;;
 	width:150px;
-}
-body{
-	background: #f7f5f5 url(../img/paper.jpg) repeat;
-	font-family: Belleza, san-serif;
 }
 
 .battle{
@@ -81,11 +73,11 @@ tr{
 td p{
 	text-align: center;
 }
-p{
+p#msg{
 	text-align: center;
 }
 
-nav{
+nav#nav-pinbattle{
 	margin: 10px auto;
 	display:table;
 	padding:0px 60px;
@@ -94,12 +86,11 @@ nav{
 	border-width: thin 0px;
 }
 
-nav>a{
+nav#nav-pinbattle>a{
 	padding: 5px 10px;
 	margin:1px 3px;
 	cursor: pointer;
 	display: inline-block;
-	
 }
 
 nav>a:hover {
@@ -124,8 +115,3 @@ td:first-child div{
 	text-align:center;	
 }
 
-.lrdiscoverwidget{
-	position: absolute;
-	top: -100px;
-	left: 5px;
-}

@@ -1,26 +1,8 @@
-{% autoescape off %}
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="robots" content="all">
-	<meta name="description" content="Pinalyzer, a Pinterest analytics tool. Your best friend to fully enjoy Pinterest.">
-	<meta name="keywords" content="pinterest, analytics, marketing, pinterest tool, tool, influence">
- 	<title>Pinalyzer, Pinterest analytics tool</title>
- 	
- 	
- 	<script type="text/javascript">var switchTo5x=true;</script>
-    <script type="text/javascript" src="http://w.sharethis.com/button/buttons.js"></script>
-    <script type="text/javascript" src="http://s.sharethis.com/loader.js"></script>
-    <link rel="stylesheet" type="text/css" href="/static/css/style_pinalyzer.css"/>
-    <link href='http://fonts.googleapis.com/css?family=Belleza' rel='stylesheet' type='text/css'>
-    <link href='http://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
-    
-    <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
-</head>
+{% extends "base.html" %}
 
+{% block header %}<link rel="stylesheet" type="text/css" href="/static/css/style_pinalyzer.css"/> {% endblock %}
+
+{% block below_header %}
 <script type="text/javascript">
 
 	
@@ -29,7 +11,7 @@
 	var interval; // Interval object
 	
 	var html_battle='<div id="progressbar" style="width:150px; height:20px"></div>'
-		+'<p> Click on the pin you prefer </p>'
+		+'<p id="msg"> Click on the pin you prefer </p>'
 		+'<div id="main">'
 			+'<img id="pin1" class="battle">'
 			+'<img id="pin2" class="battle">'
@@ -172,7 +154,7 @@
         			$("table").append(html);
         			
     			}
-    			$("table tr:even").css('background-color','rgba(255,255,215,0.9)');
+    			$("table tr:even").css('background-color','#FFFFD7');
     			$("table tr:odd").css('background-color','rgba(255,255,255,0)');
     			$("table").css('display','table');
     			
@@ -181,7 +163,7 @@
     			})
     			
     			$('tr:even').mouseleave(function(){
-    				$(this).css('background-color','rgba(255,255,215,1)');
+    				$(this).css('background-color','#FFFFD7');
     			})
     			
     			$('tr:odd').mouseleave(function(){
@@ -273,7 +255,7 @@
 	
 
 	function displayBattle(){
-		$("body").append(html_battle);	
+		$("#content").append(html_battle);	
 		setPins();
 		$("select").change(function(){
 			clearInterval(interval);
@@ -287,7 +269,7 @@
 		if(typeof perso == "undefined") {
             perso=false;
         }
-		$("body").append(html_ranking);
+		$("#content").append(html_ranking);
 		setRanking(perso);
 		
 		
@@ -303,9 +285,15 @@
 		$("select").off().nextAll().remove();
 		
 	}
+	
+	
 
 	$(document).ready(function() {
-		$("nav a").click(function(event){
+		$("#nav-battle").css({
+	        'background-color':'rgb(204,34,37)',
+	        'color':'white'
+	    });
+		$("nav#nav-pinbattle a").click(function(event){
 			event.preventDefault();
 			resetPage();
 			if(this.id=="battle_menu"){
@@ -327,59 +315,14 @@
 	
 </script>
 
-<script type="text/javascript">
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-32139124-1']);
-  _gaq.push(['_trackPageview']);
+{% endblock %}
 
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-</script>
+{% block content %}	
 
-<script>
-    var options={ "publisher": "47dcf93c-33d5-4e59-bb7d-8e759e5088b6", "position": "right", "ad": { "visible": false, "openDelay": 5, "closeDelay": 0}, "chicklets": { "items": ["facebook", "twitter", "email", "sharethis"]}};
-    var st_hover_widget = new sharethis.widgets.hoverbuttons(options);
-</script>
-
-<body >
-
-    <div id="fb-root"></div>
-    <script>
-      // Load the SDK Asynchronously
-      (function(d){
-         var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
-         if (d.getElementById(id)) {return;}
-         js = d.createElement('script'); js.id = id; js.async = true;
-         js.src = "//connect.facebook.net/en_US/all.js";
-         ref.parentNode.insertBefore(js, ref);
-       }(document));
-
-      // Init the SDK upon load
-      window.fbAsyncInit = function() {
-        FB.init({
-          appId      : 'YOUR_APP_ID', // App ID
-          channelUrl : '//'+window.location.hostname+'/channel', // Path to your Channel File
-          status     : true, // check login status
-          cookie     : true, // enable cookies to allow the server to access the session
-          xfbml      : true  // parse XFBML
-        });
-      }
-      </script>
-	
-	<div id="logo" style="width:536px;margin:0 auto;">
-		<img style="margin:0 auto;" src="/static/img/pinterest.png" alt="Pinalyzer"/>
-  		<div style="clear:both"></div>
-	</div>
-	<div rel="I90W93HI" class="lrdiscoverwidget" data-logo="on" data-background="off" data-share-url="www.pinalyzer.com/" data-css=""></div>
-	<script type="text/javascript" src="http://launchrock-ignition.s3.amazonaws.com/ignition.1.1.js"></script>
-
-	<h1>Which pin do you prefer ?</h1>
+	<h1 id="pinbattle-title">Which pin do you prefer ?</h1>
 	{% csrf_token %}
 	
-	<nav>
+	<nav id="nav-pinbattle">
 		<a id="battle_menu">Battle</a>
 		<a id="ranking_menu">Overall ranking</a>
 		<a id="persoranking_menu"> Your ranking </a>
@@ -393,6 +336,4 @@
   
 	</select>
 		
-</body>
-</html>
-{% endautoescape %}
+{% endblock %}

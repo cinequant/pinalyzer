@@ -1,22 +1,21 @@
 from django.db.models.query import QuerySet
-from django.core.serializers import serialize
-from django.utils.simplejson import loads, JSONEncoder
+from django.utils.simplejson import  JSONEncoder
 from django.db.models import Model
-from views import PinModel
+import datetime
+from map.user import User
+#from django.core.serializers import serialize
 
-from user import User
-
-
-class DjangoJSONEncoder(JSONEncoder):
-   
+class MyEncoder(JSONEncoder):
     def default(self, obj):
         """
-        Transform obj into a serializable object ( for exemple, a dict)
+        Transform obj into a serializable object 
         """
         if isinstance(obj, QuerySet):
             return list(obj)
         elif isinstance(obj,User):
             return obj.__dict__
+        elif isinstance(obj, datetime.datetime):
+            return {'year':obj.year,'month':obj.month,'day': obj.day}
         elif isinstance(obj, Model):
             d=obj.__dict__
             del d['_state']

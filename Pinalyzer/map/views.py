@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 # Create your views here.
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotFound, Http404  
 from django.shortcuts import render_to_response
 from django.shortcuts import render
 from django.utils.simplejson import dumps
 from models import PinModel, CategoryModel, UserModel
 
 import random
-
 from user import User
 from pin import Pin, Category
-from django_json import DjangoJSONEncoder
+import scoring
+from django_json import MyEncoder
 
 def index(request):
 	try:
@@ -20,7 +20,10 @@ def index(request):
 	
 	u=User(user_id)  
 	group_list=u.getFollowGroups() # all followers and following grouped by location			
-	return render_to_response('map/index.html',{'group_list':dumps(group_list,cls=DjangoJSONEncoder)})
+	return render_to_response('map/index.html',{'group_list':dumps(group_list,cls=MyEncoder)})
+
+def home(request):
+	return render_to_response('map/home.html')
 
 def ranking(request):
 	if request.is_ajax() and request.method =='GET':
@@ -35,12 +38,11 @@ def ranking(request):
 					ranking_q=cat_model.pinmodel_set.all()
 			except CategoryModel.DoesNotExist:
 				d={'status': 'ERR','data':'Error: This category does not exist on the database '}
-				data = dumps(d,cls=DjangoJSONEncoder)
+				data = dumps(d,cls=MyEncoder)
 				return HttpResponse(data, mimetype='application/json')
 		except KeyError:
 			ranking_q=PinModel.objects.all()
 		
-		print type(request.GET['perso'])
 		if request.GET['perso']== u'true':
 			match_list=request.session['match_list']
 			score={}
@@ -53,7 +55,7 @@ def ranking(request):
 			
 			ranking_list=list(ranking_q.filter(pin_id__in=score.keys()))
 			ranking_list.sort(key=lambda pin_model: -score[pin_model.pin_id])
-			data=dumps({'status':'OK','data':ranking_list},cls=DjangoJSONEncoder)
+			data=dumps({'status':'OK','data':ranking_list},cls=MyEncoder)
 			return HttpResponse(data, mimetype='application/json')
 		
 		if len(ranking_q)>0:
@@ -62,13 +64,14 @@ def ranking(request):
 			for pin in ranking_q:
 				ranking_list.append(pin)
 			
-			data=dumps({'status':'OK','data':ranking_list},cls=DjangoJSONEncoder)
+			data=dumps({'status':'OK','data':ranking_list},cls=MyEncoder)
 			return HttpResponse(data, mimetype='application/json')
 		else:
 			d={'status': 'ERR','data':'Error: No pins in this category'}
-			data = dumps(d,cls=DjangoJSONEncoder)
+			data = dumps(d,cls=MyEncoder)
 			return HttpResponse(data, mimetype='application/json')
-	return render_to_response('map/images.html')
+	else:
+		raise Http404  
 
 def vote(request):
 	if request.is_ajax() and request.method== 'GET':
@@ -84,7 +87,7 @@ def vote(request):
 					pin_q=cat_model.pinmodel_set.all()
 			except CategoryModel.DoesNotExist:
 				d={'status': 'ERR','data':'Error: This category does not exist on the database '}
-				data = dumps(d,cls=DjangoJSONEncoder)
+				data = dumps(d,cls=MyEncoder)
 				return HttpResponse(data, mimetype='application/json')
 					
 		except KeyError:
@@ -118,13 +121,13 @@ def vote(request):
 			request.session['viewed_list'].append(pin_list[i].pin_id)
 			request.session['viewed_list'].append(pin_list[j].pin_id)
 			# Send the 2 picked pins 
-			data = dumps({'status': 'OK', 'data': [pin_list[i], pin_list[j]]},cls=DjangoJSONEncoder)
+			data = dumps({'status': 'OK', 'data': [pin_list[i], pin_list[j]]},cls=MyEncoder)
 			return HttpResponse(data, mimetype='application/json')
 		
 		else:
 			# When there is no enough pin in the selcted category
 			d={'status': 'ERR','data':'No pins in this category'}
-			data = dumps(d,cls=DjangoJSONEncoder)
+			data = dumps(d,cls=MyEncoder)
 			return HttpResponse(data, mimetype='application/json')
 	else:
 		cat_list=CategoryModel.objects.all()
@@ -155,22 +158,37 @@ def savematch(request):
 			msg="Pin not found"
 			return HttpResponse(msg)
 	else:
-		msg="Not a POST"
-		return HttpResponse(msg)
+		raise Http404
 	
-def get_scoring(request):
-	if request.method =='POST':
-		user_id=request.POST['user_id']
+	
+def analytics(request):
+	return render(request,'map/analytics.html')
+	
+def get_score(request):
+	if request.is_ajax() and request.method =='POST':
+		try:
+			user_id=request.POST['user_id']
+			print user_id
+		except KeyError:
+			return HttpResponse(dumps({'status':'ERR','data':'No user_id in post param'},cls=MyEncoder), mimetype='application/json')
+		
 		u=User(user_id)
-		u.fetchScoring()
-		user=u.saveDB()
-		return HttpResponse(dumps(user,cls=DjangoJSONEncoder), mimetype='application/json')
+		
+		try:
+			u.fetchUser()
+			u.fetchScoring()
+			user=u.saveDB()
+		except scoring.NotFound:
+			
+			return HttpResponse(dumps({'status':'ERR','data':'Wrong id, nobody have this id on pinterest'},cls=MyEncoder), mimetype='application/json')
+		
+		stat=user.latest_stat()
+		score=stat.score()
+		res={'status':'OK','data':{'user':user,'stat': stat,'score':score },}
+		return HttpResponse(dumps(res,cls=MyEncoder), mimetype='application/json')
+		
 		
 	
-	if request.method =='GET':
-		user_id=request.GET['user_id']
-		user=UserModel.objects.get(user_id=user_id)
-		return HttpResponse(dumps(user,cls=DjangoJSONEncoder), mimetype='application/json')
 			
 		
 	

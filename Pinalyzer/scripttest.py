@@ -1,3 +1,5 @@
-from map.user import resetScore 
+from map.models import UserStatModel
+from simplejson import  dumps
+from django_json import MyEncoder
 
-resetScore()
+dumps(UserStatModel.objects.all(), cls=MyEncoder)
