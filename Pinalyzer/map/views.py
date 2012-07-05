@@ -4,9 +4,9 @@ from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import render_to_response
 from django.shortcuts import render
 from django.utils.simplejson import dumps
-from models import PinModel, CategoryModel, UserModel
+from models import PinModel, CategoryModel, UserModel, UserStatModel
 
-import random
+import random, datetime
 from user import User
 from pin import Pin, Category
 import scoring
@@ -22,8 +22,8 @@ def index(request):
 	group_list=u.getFollowGroups() # all followers and following grouped by location			
 	return render_to_response('map/index.html',{'group_list':dumps(group_list,cls=MyEncoder)})
 
-def home(request):
-	return render_to_response('map/home.html')
+def invite(request):
+	return render_to_response('map/invite.html')
 
 def ranking(request):
 	if request.is_ajax() and request.method =='GET':
@@ -166,29 +166,37 @@ def analytics(request):
 	
 def get_score(request):
 	if request.is_ajax() and request.method =='POST':
+		
 		try:
 			user_id=request.POST['user_id']
-			print user_id
 		except KeyError:
 			return HttpResponse(dumps({'status':'ERR','data':'No user_id in post param'},cls=MyEncoder), mimetype='application/json')
 		
-		u=User(user_id)
-		
 		try:
-			u.fetchUser()
-			u.fetchScoring()
-			user=u.saveDB()
-		except scoring.NotFound:
+			user=UserModel.objects.get(user_id=user_id)
+			d=datetime.datetime.now()
+			stat=user.userstatmodel_set.get(date__year=d.year, date__month=d.month, date__day=d.day)
+		except (UserModel.DoesNotExist, UserStatModel.DoesNotExist) as e:
+			u=User(user_id)
+			try:
+				u.fetchUser()
+				u.fetchScoring()
+				user=u.saveDB()
+			except scoring.NotFound:
+				return HttpResponse(dumps({'status':'ERR','data':'Wrong id, nobody have this id on pinterest'},cls=MyEncoder), mimetype='application/json')
 			
-			return HttpResponse(dumps({'status':'ERR','data':'Wrong id, nobody have this id on pinterest'},cls=MyEncoder), mimetype='application/json')
-		
-		stat=user.latest_stat()
+			stat=user.latest_stat()
+			
 		score=stat.score()
-		res={'status':'OK','data':{'user':user,'stat': stat,'score':score },}
+		history= user.get_history()
+		print history
+		res={'status':'OK','data':{'user':user, 'stat': stat, 'score':score, 'history':history, 'last_history':history[-7:] },}
 		return HttpResponse(dumps(res,cls=MyEncoder), mimetype='application/json')
-		
-		
 	
-			
-		
+	
+def distribution(request):
+	if request.is_ajax() and request.method =='GET':
+		distrib=UserModel.get_distribution()
+		res={'status':'OK','data':distrib}
+		return HttpResponse(dumps(res,cls=MyEncoder), mimetype='application/json')
 	

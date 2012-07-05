@@ -54,7 +54,8 @@ def addressToLatLng(address):
     if output['status'] != "OK":
         raise Exception('status ='+output['status'])
     
-    return (output['results'][0]['geometry']['location']['lat'],output['results'][0]['geometry']['location']['lng'])  
+    return (output['results'][0]['geometry']['location']['lat'],output['results'][0]['geometry']['location']['lng'])
+
 
 class User:
     
@@ -62,6 +63,43 @@ class User:
                        +'<img src="(?P<url>.*?)".*?'
                        +'<h1>(?P<name>.*?)</h1>.*?'
                        +'((<span class="icon location"></span>(?P<location>.+?(?=\n)))|</ul>)', re.DOTALL)
+    
+    re_name=re.compile('href="/(?P<id>[^/]+?)/?"[^>]*class="ImgLink"')
+    
+    @staticmethod
+    def getUserIdList(nb_page=10):
+        res=[]
+        for p in range(1,nb_page+1):
+            print p
+            r=http.request('GET','http://pinterest.com/popular/?lazy=1&page='+str(p))
+            l=[match.group('id') for match in re.finditer(User.re_name,r.data) if match.group('id')[:3] !='all' ]
+            print l
+            res.extend(list(set(l)))
+        return res
+    
+    @staticmethod
+    def fetchPopularUsers(nb_page=10):
+        user_id_list=User.getUserIdList(nb_page)
+       
+        
+        for user_id in user_id_list:
+            u=User(user_id)
+            try:
+                u.fetchUser()
+                u.fetchScoring()
+                u.saveDB()
+            except Exception:
+                print 'one user not fetched'
+                
+                
+    @staticmethod
+    def fetchLatestStat():
+        for u_model in UserModel.objects.all():
+            u=User(u_model.user_id)
+            u.fetchUser()
+            u.fetchScoring()
+            u.saveDB()
+        
     def __init__(self,user_id,location=None, name=None, photo_url=None):
         self.id=user_id # User id in pinterest, each user have a unique id
         self.name=name # User displayed name
@@ -78,11 +116,12 @@ class User:
         return 'http://www.pinterest.com/'+str(self.id)
         
     def fetchUser(self):
+        print 'IIIDD4'
+        print self.id
         r = http.request('GET', self.url())
         
         match=re.search(Scoring.re_title,r.data)
         if match != None and match.group('title') =='Pinterest - 404':
-            print 'title none'
             raise NotFound
         
         match=re.search(User.re_user,r.data)
@@ -141,7 +180,6 @@ class User:
                        
             for person_html in html_list:
                 f_id,f_loc,f_name,f_photo=searchUserInfo(person_html)
-                print (f_id,f_loc)
                 u=User(f_id,f_loc,f_name,f_photo)
                 u.calcLatLng()
                 follow_list.append(u)
@@ -196,7 +234,6 @@ class User:
                 
         if f_list !=[]:
             f_list.sort(key=lambda x:(x[0].lat,x[0].lng))
-            
             prec_lat=f_list[0][0].lat 
             prec_lng=f_list[0][0].lng
             
@@ -217,16 +254,8 @@ class User:
         return dumps(self.followers)
     
     def getFollowingJSON(self):
-        return dumps(self.following)  
-    
-   
-    
+        return dumps(self.following)
 ## test ##
 if __name__=='__main__':
-    u= User('sudzilla')
-    u.fetchUser()
-    
-    print u.name
-    print u.photo_url
-    print u.location
+    User.fetchLatestStat()
 

@@ -15,16 +15,11 @@ urlpatterns = patterns('',
          url(r'^admin/', include(admin.site.urls)),
          
          #pinalyzer
-         url(r'^pinalyzer$', 'pinapp.views.index'),
+         url(r'^pinalyzer$', 'pinalyzer.pinapp.views.index'),
          
-         url(r'^$','map.views.vote'),
-         url(r'^invite$','map.views.invite'),
-         url(r'^score$','map.views.analytics'),
-         
-         url(r'^ranking$','map.views.ranking'),
-         url(r'^savematch$','map.views.savematch'),
-         url(r'^distribution','map.views.distribution'),
-         url(r'^scoring','map.views.get_score'),
+          url(r'^ranking$','pinalyzer.map.views.ranking'),
+          url(r'^$','pinalyzer.map.views.vote'),
+          url(r'^savematch$','pinalyzer.map.views.savematch'),
        #   url(r'^$', 'pinalyzer.pinapp.views.index'),
         
 )

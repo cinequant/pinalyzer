@@ -1,181 +1,308 @@
 {% extends "base.html" %}
 
 {% block header %}
-    <link rel="stylesheet" type="text/css" href="/static/css/style_analytics.css"/> 
-   <script>
-   
-   
-   
+<link rel="stylesheet" type="text/css" href="/static/css/style_analytics.css"/> 
+<script src="static/js/highcharts.js" type="text/javascript"></script>
+<script src="static/js/highstock.js" type="text/javascript"></script>
+<script src="static/js/modules/exporting.js" type="text/javascript"></script>
+<script>
+	// Charts
+	var rep_chart;
+	var hist_chart;
+	var hist_stock;
 
-   $(document).ready(function(){
-	   
-	   $("#nav-score").css({
-           'background-color':'rgb(204,34,37)',
-           'color':'white'
-       });
-	  
-	   $('#button').click(function(event){
-		   event.preventDefault();
-		   $("#analytics-info").hide();
-		   $("#how").hide();
-		   $("#loading-div").css('visibility','visible');
-		   $("#err").hide();
-		   $.ajax({
-			   type: 'POST',
-			   url: 'scoring',
-			   data: {user_id: $("#textfield").val()},
-			   success: function(res){
-				   if(res.status=="OK"){
-					   $("#score").html(res.data.score);
-					   $("#photo").attr({src: res.data.user.photo_url});
-					   $("#name").html(res.data.user.name);
-					   $("#scorediv>p").html(res.data.user.name+"'s score :")
-					   $("#location").html(res.data.user.location);
-					   $("#boards").html(res.data.stat.nb_board);
-					   $("#pins").html(res.data.stat.nb_pin);
-					   $("#liked").html(res.data.stat.nb_liked);
-					   $("#followers").html(res.data.stat.nb_followers);
-					   $("#following").html(res.data.stat.nb_following);
-					   $("#analytics-info").css('display', 'block');
-					   
-	                   $('#analytics-info').show();
-	                   $('#how').show();
-					   	   
-				   }
-				   else{
-					   $("#err").html(res.data);
-					   $("#err").show();
-				   }
-				   
-				   $("#loading-div").css('visibility','hidden');
-				   
-				   
-			   },
-			   dataType: "json",
-			 });
-	   });
-	   
-	   $('#how h2').click(function(){
-		   $(this).next().slideToggle();
+	function setRepartitionChart() {
+		$.ajax({
+			type : 'GET',
+			url : 'distribution',
+			success : function(res) {
+				rep_chart = new Highcharts.Chart({
+					chart : {
+						renderTo : 'rep-chart',
+						type : 'column'
+					},
+					title : {
+						text : 'Distribution'
+					},
+					xAxis : {
+						categories : [ '0-10', '10-20', '20-30', '30-40', '40-50', '50-60', '60-70', '70-80', '80-90', '90-100', ]
+					},
+					yAxis : {
+						min : 0,
+						title : {
+							text : 'Percent'
+						}
+					},
+					legend : {
+						enabled : false,
+					},
+					tooltip : {
+						formatter : function() {
+							return '' + this.x + ': ' + this.y + ' %';
+						}
+					},
+					plotOptions : {
+						column : {
+							pointPadding : 0.2,
+							borderWidth : 0
+						}
+					},
+					series : [ {
+						name : '',
+						data : res.data
+					} ]
+				});
 
-	   });
-	   
-   });
-   </script> 
-{% endblock %}
+			},
+			dataType : "json"
+		});
+	}
+	
+	function setHistStock(data,name){
+		       
+	hist_stock = new Highcharts.StockChart({
+			chart : {
+				renderTo : 'hist-stock'
+			},
 
-{% block start %}
-    <script>
-    // Init the SDK upon load
-    /*alert('avant async');
-    window.fbAsyncInit = function() {
-        FB.init({
-            appId      : '198393166955666', // App ID
-            channelUrl : '//'+window.location.hostname+'/channel', // Path to your Channel File
-            status     : true, // check login status
-            cookie     : true, // enable cookies to allow the server to access the session
-            xfbml      : true  // parse XFBML
+			rangeSelector : {
+				selected : 1
+			},
+
+			title : {
+				text : name+"'s score history"
+			},
+			
+			yAxis : {
+                minPadding: 0.05,
+                title : {
+                    text : 'Score'
+                },
+            },
+
+			series : [{
+				name : 'score',
+				data : data,
+				marker : {
+                    enabled : true,
+                    radius : 3
+                },
+                shadow : true,
+                tooltip : {
+                    valueDecimals : 2
+                }
+			} ]
+		});
+	}
+	
+	function setHistChart(data,name){
+		
+		hist_chart = new Highcharts.Chart({
+            chart : {
+                renderTo : 'hist-chart',
+                type : 'spline'
+            },
+            title : {
+                text : 'The last few days'
+            },
+            xAxis : {
+            	type: 'datetime',
+                dateTimeLabelFormats: { // don't display the dummy year
+                    month: '%e. %b',
+                    year: '%b'
+                }
+            },
+            yAxis : {
+                minPadding: 0.20,
+                title : {
+                    text : 'Score'
+                },
+                startOnTick: true,
+            },
+            tooltip : {
+                formatter : function() {
+                    return '' + this.y + ' %';
+                }
+            },
+            plotOptions : {
+                column : {
+                    pointPadding : 0.2,
+                    borderWidth : 0
+                }
+            },
+            series : [ {
+                name : name,
+                data : data
+            } ]
         });
-    
-        alert('dans async');
-        $(".fblogin").click(function(event){
-            event.preventDefault();
-            FB.login();
-            });
+	}
 
-        $(".fblogout").click(function(event){
-            event.preventDefault();
-            FB.logout();
-        });
-    
-    }*/
-    </script>
-{% endblock %}
+	$(document).ready(function() {
+		$("#nav-score").css({
+			'background-color' : 'rgb(204,34,37)',
+			'color' : 'white'
+		});
 
+		$('#button').click(function(event) {
+			event.preventDefault();
+			$("#analytics-info").hide();
+			$("#how").hide();
+			$("#loading-div").css('visibility', 'visible');
+			$("#err").hide();
+			$.ajax({
+				type : 'POST',
+				url : 'scoring',
+				data : {
+					user_id : $("#textfield").val()
+				},
+				success : function(res) {
+					if (res.status == "OK") {
+						$("#score").html(res.data.score.toFixed(1));
+						$("#photo").attr({
+							src : res.data.user.photo_url
+						});
+						$("#name").html(res.data.user.name);
+						$("#scorediv>p").html(res.data.user.name + "'s score :")
+						$("#location").html(res.data.user.location);
+						$("#boards").html(res.data.stat.nb_board);
+						$("#pins").html(res.data.stat.nb_pin);
+						$("#liked").html(res.data.stat.nb_liked);
+						$("#followers").html(res.data.stat.nb_followers);
+						$("#following").html(res.data.stat.nb_following);
+						setHistChart(res.data.last_history, res.data.user.name);
+						setHistStock(res.data.history, res.data.user.name);
+						$("#analytics-info").css('display', 'block');
+
+						$('#analytics-info').show();
+						$('#how').show();
+
+					} else {
+						$("#err").html(res.data);
+						$("#err").show();
+					}
+
+					$("#loading-div").css('visibility', 'hidden');
+
+					setRepartitionChart();
+
+				},
+				dataType : "json",
+			});
+		});
+
+		$('#how h2').click(function() {
+			$(this).next().slideToggle();
+
+		});
+
+	});
+</script>
+{% endblock %} 
 
 {% block content %}
-    <h2 id="score-title"> Enter your Pinterest id and get your score.</h2>
-    <div id="input">
-        <form>
-            <input id= "textfield" type="text" name="user_id" />
-            <input id="button" type="submit" value="Get your score" />
-        </form>
-            {% csrf_token %}
-        
-    </div>
-    
-    <p id="err"></p>
-    
-    <div id="loading-div">
-        
-        <img src="/static/img/ajax-loader.gif"/>
-        <p>Please wait, we're computing the score</p>
-    </div>
-    
-    <div id="analytics-info">
+<h2 id="score-title">Enter your Pinterest id and get your score.</h2>
+<div id="input">
+	<form>
+		<input id="textfield" type="text" name="user_id" /> <input
+			id="button" type="submit" value="Get your score" />
+	</form>
+	{% csrf_token %}
 
-        <div id="main-info">
-        
-            <div id="perso">
-                <img id="photo" src="http://media-cache-ec7.pinterest.com/upload/25543922857168989_WvVJfZ5c_b.jpg"/>
-                <div id="nameloc">
-                    <h2 id="name">Toto</h2>
-                    <span id="location">Paris</span>
-                </div>
-                
-            </div>
-            
-            <div id="info">
-        
-                
-            
-                <table>
-                    <tr>
-                        <td id="boards">8</td>
-                        <td>Boards</td>
-                    </tr>
-                    
-                     <tr>
-                        <td id="pins">147</td>
-                        <td>Pins</td>
-                    </tr>
-                    
-                    <tr>
-                        <td id="liked">30</td>
-                        <td>Likes</td>
-                    </tr>
-                    
-                     <tr>
-                        <td id="followers">254</td>
-                        <td>Followers</td>
-                    </tr>
-                    
-                    <tr>
-                        <td id="following">20</td>
-                        <td>Following</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-        
-        <div id="scorediv">
-            <p> Your Pinalyzer score :</p>
-            <div ><p id="score">99.9</p></div>
-        </div>
-        
-    
-        
+</div>
+
+<p id="err"></p>
+
+<div id="loading-div">
+
+	<img src="/static/img/ajax-loader.gif" />
+	<p>Please wait, we're computing the score</p>
+</div>
+
+<div id="analytics-info">
+
+	<div id="main-info">
+
+		<div id="perso">
+			<img id="photo"
+				src="http://media-cache-ec7.pinterest.com/upload/25543922857168989_WvVJfZ5c_b.jpg" />
+			<div id="nameloc">
+				<h2 id="name">Toto</h2>
+				<span id="location">Paris</span>
+			</div>
+
+		</div>
+
+		<div id="info">
+
+
+
+			<table>
+				<tr>
+					<td id="boards">8</td>
+					<td>Boards</td>
+				</tr>
+
+				<tr>
+					<td id="pins">147</td>
+					<td>Pins</td>
+				</tr>
+
+				<tr>
+					<td id="liked">30</td>
+					<td>Likes</td>
+				</tr>
+
+				<tr>
+					<td id="followers">254</td>
+					<td>Followers</td>
+				</tr>
+
+				<tr>
+					<td id="following">20</td>
+					<td>Following</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+
+	<div id="scorediv">
+		<p>Your Pinalyzer score :</p>
+		<div>
+			<p id="score">99.9</p>
+		</div>
+	</div>
+	
+	<div id="score-history">
+	   <h2>Score History</h2>
+	   <div class="chart" id="hist-stock"></div>
+       <div class="chart" id="hist-chart"></div>
+	   
+	</div>
+	
+	<div id="score-distribution">
+	   <h2>Score distribution for all users</h2>
+	   <div class="chart" id="rep-chart"></div>
+	</div>
+
 </div>
 
 
+
+
+
 <div id="how">
-    <div>
-        <h2> What does the score mean ?</h2>
-        <p>The score rates someone's influence and popularity on Pinterest. The higher someone's score is, the more influential he or she is.
-        The minimum score  is 0 and the highest score possible is 100.</p>
-    </div>
-    <div>
-        <h2> How does Pinalyzer compute my score ?</h2>
-        <p>Pinalyzer evaluates how people are interested in your pins. Essentially, we look at how many followers you have and how many people like, repin and comment your pins. </p>
-   </div>
+	<div>
+		<h2>What does the score mean ?</h2>
+		<p>The score rates someone's influence and popularity on
+			Pinterest. The higher someone's score is, the more influential he or
+			she is. The minimum score is 0 and the highest score possible is 100.</p>
+	</div>
+	<div>
+		<h2>How does Pinalyzer compute my score ?</h2>
+		<p>Pinalyzer evaluates how people are interested in your pins.
+			Essentially, we look at how many followers you have and how many
+			people like, repin and comment your pins.</p>
+	</div>
+</div>
+
 {% endblock %}

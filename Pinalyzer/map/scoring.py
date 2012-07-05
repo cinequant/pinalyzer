@@ -68,10 +68,8 @@ class Scoring:
     
     def fetchInfo(self):
         r=Scoring.http.request('GET',self.main_url())
-        print r.data
         match=re.search(Scoring.re_title,r.data)
         if match != None and match.group('title') =='Pinterest - 404':
-            print 'title none'
             raise NotFound
         
         match=re.search(Scoring.re_contextbar,r.data)
@@ -97,6 +95,7 @@ class Scoring:
         
         self.sampled_pin=0
         for page in list_page:
+            print 'page '+str(page)
             r=Scoring.http.request('GET', self.pins_url(page))
             pin_div_list=Scoring.splitter.split(re.search(Scoring.re_pin_html,r.data).group(0))[1:]
             for pin_div in pin_div_list:
@@ -104,7 +103,6 @@ class Scoring:
                 self.nb_like+=Scoring.searchLike(pin_div)
                 self.nb_comment+=Scoring.searchComment(pin_div)
                 self.nb_repin+=Scoring.searchRepin(pin_div)
-                print (self.nb_like, self.nb_comment, self.nb_repin, self.sampled_pin)
         
              
         if self.nb_pin !=self.sampled_pin:
@@ -121,5 +119,4 @@ if __name__=='__main__':
     s=Scoring('sudzilla')
     s.fetchInfo()
     s.fetchPinsInfo()
-    
     print (s.id,s.nb_board,s.nb_pin, s.nb_liked, s.nb_followers, s.nb_following)

@@ -32,7 +32,7 @@
 #analytics-info{
 	background-color: white;
 	box-shadow: 1px 1px 3px rgba(0,0,0,0.4);
-	border-radius: 5px;
+	border-radius: 3px;
 	border: 1px solid rgba(0,0,0,0.1);
 	padding: 40px;
 	display: none;
@@ -78,8 +78,7 @@
 	text-align: center;
 	font-size: 80px;
 	position: relative;
-	top:-10px;
-	
+	top:-10px;	
 }
 
 
@@ -120,6 +119,7 @@ h2#name{
 }
 #how{
 	margin-top: 30px;
+	margin-bottom: 30px;
 	display: none;
 }
 
@@ -144,5 +144,31 @@ h2#name{
 #how h2:hover{
 	color:rgb(204,34,37);
 }
+
+#score-history{
+	margin-top:50px;
+	width: 700px;
+}
+
+#score-distribution{
+	margin-top: 20px;
+	width: 700px;
+}
+
+#score-history h2, #score-distribution h2{
+    text-shadow: 0px 3px  rgba(100,100,100,0.3);
+    border-bottom: 1px solid black;
+    padding-bottom: 10px;
+}
+.chart{
+	height: 250px;
+	margin: 20px;
+	border: 1px solid black
+	
+}
+#hist-chart{
+	display: none;
+}
+
 
 
