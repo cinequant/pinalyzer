@@ -95,7 +95,6 @@ class Scoring:
         
         self.sampled_pin=0
         for page in list_page:
-            print 'page '+str(page)
             r=Scoring.http.request('GET', self.pins_url(page))
             pin_div_list=Scoring.splitter.split(re.search(Scoring.re_pin_html,r.data).group(0))[1:]
             for pin_div in pin_div_list:

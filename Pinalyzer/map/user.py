@@ -80,25 +80,41 @@ class User:
     @staticmethod
     def fetchPopularUsers(nb_page=10):
         user_id_list=User.getUserIdList(nb_page)
-       
-        
+        total=0
+        not_fetched=0
         for user_id in user_id_list:
+            total+=1
             u=User(user_id)
             try:
                 u.fetchUser()
                 u.fetchScoring()
                 u.saveDB()
             except Exception:
+                not_fetched+=1
                 print 'one user not fetched'
+        return not_fetched,total
                 
                 
     @staticmethod
-    def fetchLatestStat():
-        for u_model in UserModel.objects.all():
-            u=User(u_model.user_id)
-            u.fetchUser()
-            u.fetchScoring()
-            u.saveDB()
+    def fetchLatestStats():
+        total = 0
+        not_fetched = 0
+        for user in UserModel.objects.all():
+            try:
+                d = datetime.datetime.now()
+                stat = user.userstatmodel_set.get(date__year=d.year, date__month=d.month, date__day=d.day)
+            except UserStatModel.DoesNotExist:
+                total += 1
+                u = User(user.user_id)
+                try:
+                    u.fetchUser()
+                    u.fetchScoring()
+                    u.saveDB()
+                except Exception:
+                    not_fetched += 1
+                    print 'one user not fetched'
+        return not_fetched,total
+                    
         
     def __init__(self,user_id,location=None, name=None, photo_url=None):
         self.id=user_id # User id in pinterest, each user have a unique id

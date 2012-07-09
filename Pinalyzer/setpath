@@ -1,3 +1,4 @@
 #!/bin/bash
 export PYTHONPATH=/home/kevin/git/pinalyzer/Pinalyzer
+export PYTHONPATH=/srv:$PYTHONPATH
 export DJANGO_SETTINGS_MODULE=settings

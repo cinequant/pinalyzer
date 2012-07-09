@@ -39,12 +39,25 @@ class UserModel(models.Model):
             s=u.latest_stat().score()
             i=int(s)/10
             rep[i]+=1
-            print 'hey'
         return [int((float(x)/float(len(user_q)))*1000)/10.0 for x in rep]
         
     
     class Meta:
         app_label = 'map'
+        
+class FbUserModel(models.Model):
+    fb_id=models.CharField(max_length=200)
+    user=models.OneToOneField('UserModel', null=True)
+    class Meta:
+        app_label = 'map'
+
+class PinPersoModel(models.Model):
+    fb_user=models.ForeignKey('FbUserModel')
+    pin=models.ForeignKey('PinModel')
+    score=models.FloatField(default=0)
+    class Meta:
+        app_label = 'map'
+        unique_together = ('fb_user', 'pin',)
         
 class LocationModel(models.Model):
     address = models.CharField(max_length=200, primary_key=True)   
@@ -171,6 +184,9 @@ class UserStatModel(models.Model):
     
     class Meta:
         app_label = 'map'
+        
+        
+
     
     
     

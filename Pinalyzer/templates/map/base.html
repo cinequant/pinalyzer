@@ -1,30 +1,44 @@
 {% autoescape off %}
 <!DOCTYPE html>
+
+{% if fb_info.meta %}
+<html xmlns="http://www.w3.org/1999/xhtml" dir="ltr" lang="en-US" xmlns:fb="https://www.facebook.com/2008/fbml">
+<head prefix="og: http://ogp.me/ns# {{fb_info.app_namespace}}: http://ogp.me/ns/apps/{{fb_info.app_namespace}}#">
+<meta property="fb:app_id" content="{{fb_info.app_id}}" />
+<meta property="og:type" content="{{fb_info.app_namespace}}:{{fb_info.meta.type}}" />
+<meta property="og:title" content="{{fb_info.meta.title}}" />
+<meta property="og:image" content="{{fb_info.meta.image}}" />
+<meta property="og:description" content="{{fb_info.meta.description}}" />
+<meta property="og:url" content="{{fb_info.meta.url}}">
+{% else %}
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="robots" content="all">
-    <meta name="description" content="Pinalyzer, a Pinterest analytics tool. Your best friend to fully enjoy Pinterest.">
-    <meta name="keywords" content="pinterest, analytics, marketing, pinterest tool, tool, influence">
-    <title>{% block title %}Pinalyzer, Pinterest analytics tool {% endblock %}</title>
-    
-    <!--
+{% endif %}
+
+<meta charset="UTF-8">
+<meta name="robots" content="all">
+<meta name="description" content="Pinalyzer, a Pinterest analytics tool. Your best friend to fully enjoy Pinterest.">
+<meta name="keywords" content="pinterest, analytics, marketing, pinterest tool, tool, influence">
+<title>{% block title %}Pinalyzer, Pinterest analytics tool {% endblock %}</title>
+
+<!--
     <script type="text/javascript">var switchTo5x=true;</script>
     <script type="text/javascript" src="http://w.sharethis.com/button/buttons.js"></script>
     <script type="text/javascript" src="http://s.sharethis.com/loader.js"></script>-->
-    <link rel="stylesheet" type="text/css" href="/static/css/style_base.css"/>
-    <link href='http://fonts.googleapis.com/css?family=Belleza' rel='stylesheet' type='text/css'>
-    <link href='http://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
-    
-    <link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
-    <script src="/static/js/jquery-1.7.2.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
-    {% block header %} {% endblock %}
+<link rel="stylesheet" type="text/css" href="/static/css/style_base.css" />
+<link href='http://fonts.googleapis.com/css?family=Belleza' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
+
+<link href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/themes/base/jquery-ui.css" rel="stylesheet" type="text/css" />
+<script src="/static/js/jquery-1.7.2.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
+{% block header %} {% endblock %}
 </head>
 
 {% block below_header %} {% endblock %}
 
 <!--Google analytics script -->
+<!-- 
 <script type="text/javascript">
   var _gaq = _gaq || [];
   _gaq.push(['_setAccount', 'UA-32139124-1']);
@@ -35,16 +49,16 @@
     ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
   })();
-</script>
+</script>  -->
 
 <!--Share script 
 <script>
     var options={ "publisher": "47dcf93c-33d5-4e59-bb7d-8e759e5088b6", "position": "right", "ad": { "visible": false, "openDelay": 5, "closeDelay": 0}, "chicklets": { "items": ["facebook", "twitter", "email", "sharethis"]}};
     var st_hover_widget = new sharethis.widgets.hoverbuttons(options);
 </script>
--->   
+-->
 
-<!--Django ajax script -->   
+<!--Django ajax script -->
 <script>
 jQuery(document).ajaxSend(function(event, xhr, settings) {
         function getCookie(name) {
@@ -83,76 +97,88 @@ jQuery(document).ajaxSend(function(event, xhr, settings) {
         }
     });
 </script>
-    
-    <body>
-    
-    <div id="fb-root"></div>
-    <script>
- // Load the SDK Asynchronously
-    (function(d){
-       var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
-       if (d.getElementById(id)) {return;}
-       js = d.createElement('script'); js.id = id; js.async = true;
-       js.src = "https://connect.facebook.net/en_US/all.js";
-       ref.parentNode.insertBefore(js, ref);
-     }(document));
 
-    // Init the SDK upon load
-    window.fbAsyncInit = function() {
-      FB.init({
-        appId      : '259025140873474', // App ID
-        channelUrl : '//'+window.location.hostname+'/channel', // Path to your Channel File
-        status     : true, // check login status
-        cookie     : true, // enable cookies to allow the server to access the session
-        xfbml      : true  // parse XFBML
-      });
+<body>
     
-    
-        $(".fblogin").click(function(event){
-            event.preventDefault();
-            FB.login();
-            });
-
-        $(".fblogout").click(function(event){
-        	event.preventDefault();
-        	FB.logout();
-        });
-        
-        FB.Event.subscribe('auth.statusChange', function(response) {
-            if (response.authResponse) {
-                $(".fblogin").css('display','none');
-                $("#fblogout").css('display','block');
+	<div id="fb-root"></div>
+	
+	<script>
+	   var fb_id=null;
+	   var access_token=null;
+		// Load the SDK Asynchronously
+		(function(d) {
+			var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+			if (d.getElementById(id)) {
+				return;
+			}
+			js = d.createElement('script');
+			js.id = id;
+			js.async = true;
+			js.src = "https://connect.facebook.net/en_US/all.js";
+			ref.parentNode.insertBefore(js, ref);
+		}(document));
+		
+		var callback_login=function(response){
+			
+			if (response.authResponse) {
+				
+                $(".logout-button, .logout-info").css('display','table');
+                $(".login-button, .login-info").css('display','none');
+                fb_id=response.authResponse.userID;
+                access_token = response.authResponse.accessToken;
+            } else {
+            	fb_id=null;
+            	access_token=null;
+                $(".login-button, .login-info").css('display','table');;
+                $(".logout-button, .logout-info").css('display','none');
             }
-            else{
-                $(".fblogin").css('display','block');
-                $(".fblogout").css('display','none');
-            }
-        });
-    }
+		}
 
-    </script>
-    {% block start %}{% endblock %}
-        
-        <header>
-        
-            <div id=header-center>
-                <div id="logo">
-                <h1 id="title" >Pinalyzer</h1>
-                <p id=title-text>Your best friend to enjoy pinterest</p>
-           </div>
-                
-                 <nav id="main-nav">
-                    <a id="nav-battle" href="/">Pin Battle</a>
-                    <a id="nav-score" href="/score">Score</a>
-                    <a id="nav-invite" href="/invite">Invite</a>
-                  </nav>
-            </div>
-        
-        </header>
-        <div id=content>
-            {% block content %}{% endblock %}
-        </div>
-        
-    </body>
+		// Init the SDK upon load
+		window.fbAsyncInit = function() {
+			FB.init({
+				appId : {{fb_info.app_id}}, // App ID
+				channelUrl : '//' + window.location.hostname + '/channel', // Path to your Channel File
+				status : true, // check login status
+				cookie : true, // enable cookies to allow the server to access the session
+				xfbml : true
+			// parse XFBML
+			});
+			
+			FB.getLoginStatus(callback_login);
+			FB.Event.subscribe('auth.statusChange',callback_login);
+
+			$(".login-button").click(function() {
+				FB.login(function(response){},{scope: 'email,user_likes,publish_stream'});
+			});
+
+			$(".logout-button").click(function() {
+				FB.logout();
+			});
+		}
+		
+	</script>
+	{% block start %}{% endblock %}
+
+	<header>
+
+		<div id=header-center>
+			<div id="logo">
+				<h1 id="title">Pinalyzer</h1>
+				<p id=title-text>Your best friend to enjoy pinterest</p>
+			</div>
+			<div class="login-button">Login with facebook</div>
+			<div class="logout-button">Logout</div>
+
+			<nav id="main-nav">
+				<a id="nav-battle" href="/">Pin Battle</a> <a id="nav-score" href="/score">Score</a> <a id="nav-invite" href="/invite">Invite</a>
+			</nav>
+
+		</div>
+
+	</header>
+	<div id=content>{% block content %}{% endblock %}</div>
+
+</body>
 </html>
 {% endautoescape %}

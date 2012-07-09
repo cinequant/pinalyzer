@@ -44,12 +44,22 @@ class Category:
         cat=Category('popular','Popular')
         cat.createDB()
     
+    @staticmethod 
+    def fetchNewPins():
+        for cat in CategoryModel.objects.all():
+            c=Category(cat.category_id,cat.category_name)
+            try:
+                c.fetchPin(limit=2)
+            except Exception:
+                print '1 pin a echoué'
+    
     def __init__(self, cat_id, cat_name):
         self.cat_id=cat_id
         self.cat_name=cat_name
     
     def __unicode__(self):
         return '{self.cat_id}, {self.cat_name}}'.format(self=self)
+    
     
     def fetchPin(self,limit=1):
         for page in range(1,limit+1):
@@ -128,6 +138,5 @@ class Pin:
         self.width, self.height=img.size             
 
 if __name__ =='__main__':
-    cat=Category('popular','')
-    cat.fetchPin(1)
+    pass
     

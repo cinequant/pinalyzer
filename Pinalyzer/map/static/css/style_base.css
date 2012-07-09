@@ -19,6 +19,42 @@ header{
 	box-shadow: 0px 2px 10px rgba(0,0,0,0.5);
 	display: block;
 }
+.login-button{
+	display: none;
+}
+
+.logout-button{
+    display: none;
+}
+
+.login-button, .logout-button{
+    padding: 2px 7px;
+    color:rgb(252,252,252);
+    font-size:12px;
+    text-align:center;
+    box-shadow:0px 1px 2px rgba(0,0,0,0.3);
+    cursor: pointer;
+    background:#5F78AB;
+    border:1px solid #1a356e;
+    font-weight:700;
+    font-family:"lucida grande",tahoma,verdana,arial,sans-serif;
+    
+     user-select: none;
+    -khtml-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+    -moz-user-select: -moz-none;
+    -webkit-user-select: none;
+}
+
+header .login-button,header .logout-button{
+	float: right;
+}
+
+.login-button:active{
+	background:#3B5998;
+}
+
 
 #header-center{
 	margin: 0px auto;
@@ -32,6 +68,13 @@ div#logo{
 }
 
 h1#title, p#title-text{
+	user-select: none;
+    -khtml-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+    -moz-user-select: -moz-none;
+    -webkit-user-select: none;
+    
 	font-family: 'Pacifico', cursive;
 	text-align: left;
 	margin: 0px 0px;

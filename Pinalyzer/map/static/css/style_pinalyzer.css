@@ -10,7 +10,7 @@ h1#pinbattle-title{
 	font-family: 'Pacifico', cursive;
 	font-size: 25px;
 	font-weight: normal;
-	margin-top: 40px;
+	margin-top: 20px;
 	postion:fixed;
 }
 
@@ -21,7 +21,7 @@ h1#pinbattle-title{
 
 select{
 	display:block;
-	margin: 30px auto 5px auto;;
+	margin: 5px auto 5px auto;;
 	width:150px;
 }
 
@@ -115,3 +115,20 @@ td:first-child div{
 	text-align:center;	
 }
 
+.fb-like{
+	width: 500px;
+	margin: 0px auto;
+}
+
+#suscribe{
+	width :300px;
+	margin: 0px auto;
+	padding-bottom: 20px;
+	border-bottom: 1px solid black;
+}
+
+#suscribe>*{
+    display: table;
+    font-size: 14px;
+    margin: 0px auto;
+}

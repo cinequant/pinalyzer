@@ -1,23 +1,12 @@
-{% extends "base.html" %}
-
-{% block header %}<link rel="stylesheet" type="text/css" href="/static/css/style_pinalyzer.css"/> {% endblock %}
-
-{% block below_header %}
+{% extends "base.html" %} {% block header %}
+<link rel="stylesheet" type="text/css" href="/static/css/style_pinalyzer.css" />
+{% endblock %} {% block below_header %}
 <script type="text/javascript">
 
 	
 	var limit=5000; // Waiting time for the next couple
 	var time=limit;
 	var interval; // Interval object
-	
-	var html_battle='<div id="progressbar" style="width:150px; height:20px"></div>'
-		+'<p id="msg"> Click on the pin you prefer </p>'
-		+'<div id="main">'
-			+'<img id="pin1" class="battle">'
-			+'<img id="pin2" class="battle">'
-		+'</div>';
-		
-	var html_ranking='<table border=0></table>';
 	
 	function getSmaller(url){
 		return url.substr(0,url.length-5) +'b'+url.substr(url.length-4,url.length)
@@ -122,218 +111,226 @@
 		})
 	}
 	
-	function sendResult(choice,callback){
-		pin1_id=$("#pin1").attr("pin_id");
-		pin2_id=$("#pin2").attr("pin_id");
+	
+	
+	function sendResult(choice, callback) {
+	pin1_id = $("#pin1").attr("pin_id");
+		pin2_id = $("#pin2").attr("pin_id");
 		$.ajax({
-			type: "POST",
-			url: "savematch",
-			data: {pin1_id: pin1_id , pin2_id: pin2_id, choice:choice,},
-			success: callback,
+			type : "POST",
+			url : "savematch",
+			data : {pin1_id : pin1_id,
+                pin2_id : pin2_id,
+                choice : choice,
+                fb_id : fb_id,},
+			success : callback,
 		});
-		
+
 	}
-	
-	function setRanking(perso){
-		if(typeof perso == "undefined") {
-			perso=false;
+
+	function setRanking(perso) {
+		if (typeof perso == "undefined") {
+			perso = false;
 		}
-		
-		category=$("select").attr('value');
-		$.get("ranking",{category:category, perso: perso}, function(result){
-    		if (result.status=="OK"){
-    			$("table").css('display','none');
-    			for (var i=0; i<result.data.length; i++){
-    				pin=result.data[i];
-    				var html='<tr>';
-    				html+='<td><div>'+(i+1)+'</div></td>';
-        			html+='<td><a href="http://pinterest.com/pin/'+pin.pin_id+'"><img src="'+getSmaller(pin.url)+'"/></a></td>';
-        			html+='<td><p><a href="http://pinterest.com/'+pin.pinner_id+'">'+pin.pinner_name+'</a> onto <a href="http://pinterest.com/'+pin.pinner_id+'/'+pin.board_id+'">'+pin.board_name+'</a></p> </td>';
- 
-        			html+='</tr>';
-        			$("table").append(html);
-        			
-    			}
-    			$("table tr:even").css('background-color','#FFFFD7');
-    			$("table tr:odd").css('background-color','rgba(255,255,255,0)');
-    			$("table").css('display','table');
-    			
-    			$('tr').mouseenter(function(){
-    				$(this).css('background-color','rgb(204,34,37)');
-    			})
-    			
-    			$('tr:even').mouseleave(function(){
-    				$(this).css('background-color','#FFFFD7');
-    			})
-    			
-    			$('tr:odd').mouseleave(function(){
-    				$(this).css('background-color','rgba(255,255,255,0)');
-    			})
-    		}
-    		else{
-    			alert(result['data']);
-    		}
-    	});
+
+		category = $("select").attr('value');
+		$.get("ranking", {
+			category : category,
+			perso : perso,
+			fb_id: fb_id,
+		}, function(result) {
+			if (result.status == "OK") {
+				$("table").css('display', 'none');
+				for ( var i = 0; i < result.data.length; i++) {
+					for ( var j = 0; j < result.data[i].length; j++) {
+						pin = result.data[i][j];
+						var html = '<tr>';
+						html += '<td><div>' + (i + 1) + '</div></td>';
+						html += '<td><a href="http://pinterest.com/pin/'+pin.pin_id+'"><img src="' + getSmaller(pin.url) + '"/></a></td>';
+						html += '<td><p><a href="http://pinterest.com/'+pin.pinner_id+'">' + pin.pinner_name + '</a> onto <a href="http://pinterest.com/'+pin.pinner_id+'/'+pin.board_id+'">' + pin.board_name + '</a></p> </td>';
+						html += '</tr>';
+						$("table").append(html);
+					}
+
+				}
+				$("table tr:even").css('background-color', '#FFFFD7');
+				$("table tr:odd").css('background-color', 'rgba(255,255,255,0)');
+				$("table").css('display', 'table');
+
+				$('tr').mouseenter(function() {
+					$(this).css('background-color', 'rgb(204,34,37)');
+				})
+
+				$('tr:even').mouseleave(function() {
+					$(this).css('background-color', '#FFFFD7');
+				})
+
+				$('tr:odd').mouseleave(function() {
+					$(this).css('background-color', 'rgba(255,255,255,0)');
+				})
+			} else {
+				alert(result['data']);
+			}
+		});
 	}
-	
+
 	jQuery(document).ajaxSend(function(event, xhr, settings) {
-	    function getCookie(name) {
-	        var cookieValue = null;
-	        if (document.cookie && document.cookie != '') {
-	            var cookies = document.cookie.split(';');
-	            for (var i = 0; i < cookies.length; i++) {
-	                var cookie = jQuery.trim(cookies[i]);
-	                // Does this cookie string begin with the name we want?
-	                if (cookie.substring(0, name.length + 1) == (name + '=')) {
-	                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-	                    break;
-	                }
-	            }
-	        }
-	        return cookieValue;
-	    }
-	    function sameOrigin(url) {
-	        // url could be relative or scheme relative or absolute
-	        var host = document.location.host; // host + port
-	        var protocol = document.location.protocol;
-	        var sr_origin = '//' + host;
-	        var origin = protocol + sr_origin;
-	        // Allow absolute or scheme relative URLs to same origin
-	        return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
-	            (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
-	            // or any other URL that isn't scheme relative or absolute i.e relative.
-	            !(/^(\/\/|http:|https:).*/.test(url));
-	    }
-	    function safeMethod(method) {
-	        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-	    }
+		function getCookie(name) {
+			var cookieValue = null;
+			if (document.cookie && document.cookie != '') {
+				var cookies = document.cookie.split(';');
+				for ( var i = 0; i < cookies.length; i++) {
+					var cookie = jQuery.trim(cookies[i]);
+					// Does this cookie string begin with the name we want?
+					if (cookie.substring(0, name.length + 1) == (name + '=')) {
+						cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+						break;
+					}
+				}
+			}
+			return cookieValue;
+		}
+		function sameOrigin(url) {
+			// url could be relative or scheme relative or absolute
+			var host = document.location.host; // host + port
+			var protocol = document.location.protocol;
+			var sr_origin = '//' + host;
+			var origin = protocol + sr_origin;
+			// Allow absolute or scheme relative URLs to same origin
+			return (url == origin || url.slice(0, origin.length + 1) == origin + '/') || (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+			// or any other URL that isn't scheme relative or absolute i.e relative.
+			!(/^(\/\/|http:|https:).*/.test(url));
+		}
+		function safeMethod(method) {
+			return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+		}
 
-	    if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
-	        xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
-	    }
+		if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
+			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+		}
 	});
-	
 
-	
-	function startChrono(){
+	function startChrono() {
 		clearInterval(interval);
-		time=limit;
-		step=10;
-		
+		time = limit;
+		step = 10;
+
 		$(function() {
-			$( "#progressbar" ).progressbar({
-				value: 100
+			$("#progressbar").progressbar({
+				value : 100
 			});
 		});
-		interval=setInterval(function(){
-			time-=step;
+		interval = setInterval(function() {
+			time -= step;
 			$(function() {
-				$( "#progressbar" ).progressbar({
-					value: time/limit*100
+				$("#progressbar").progressbar({
+					value : time / limit * 100
 				});
 			});
-			
-			
-			if(time<=0){
+
+			if (time <= 0) {
 				clearInterval(interval);
-				fadeout=false;
-				$(".battle").off().animate({ opacity: 0 },700, function(){
-					if (!fadeout){
-						fadeout=true;
-					}
-					else{
+				fadeout = false;
+				$(".battle").off().animate({
+					opacity : 0
+				}, 700, function() {
+					if (!fadeout) {
+						fadeout = true;
+					} else {
 						setPins();
 					}
-					
+
 				});
 			}
-			
-		},step);
-		
-	}
-	
-	
 
-	function displayBattle(){
-		$("#content").append(html_battle);	
+		}, step);
+
+	}
+
+	function displayBattle() {
+		$("#progressbar, #msg, #main").show();
 		setPins();
-		$("select").change(function(){
+		$("select").change(function() {
 			clearInterval(interval);
 			$(".battle").off('click');
-			time=0;
+			time = 0;
 			setPins();
 		});
 	}
-	
-	function displayRanking(perso){
-		if(typeof perso == "undefined") {
-            perso=false;
-        }
-		$("#content").append(html_ranking);
+
+	function displayRanking(perso) {
+		if (typeof perso == "undefined") {
+			perso = false;
+		}
+		$("table").show();
 		setRanking(perso);
-		
-		
-		$("select").change(function(){
+
+		$("select").change(function() {
 			resetPage();
 			displayRanking(perso);
 		});
 	}
-	
-	function resetPage(){
+
+	function resetPage() {
 		clearInterval(interval);
 		$("#main img").off();
-		$("select").off().nextAll().remove();
-		
+		$("#progressbar, #msg, #main, table").hide();
+		$("table").children().remove();
+
 	}
-	
-	
 
 	$(document).ready(function() {
 		$("#nav-battle").css({
-	        'background-color':'rgb(204,34,37)',
-	        'color':'white'
-	    });
-		$("nav#nav-pinbattle a").click(function(event){
+			'background-color' : 'rgb(204,34,37)',
+			'color' : 'white'
+		});
+		$("nav#nav-pinbattle a").click(function(event) {
 			event.preventDefault();
 			resetPage();
-			if(this.id=="battle_menu"){
+			if (this.id == "battle_menu") {
 				displayBattle();
-			}
-			else if (this.id=="ranking_menu"){
+			} else if (this.id == "ranking_menu") {
 				displayRanking();
-			}
-			else{
+			} else {
 				displayRanking(true);
 			}
 		})
-		
+
 		displayBattle();
-		
-		$("body").off();	
+
+		$("body").off();
 	});
-	
-	
 </script>
 
-{% endblock %}
+{% endblock %} {% block content %}
+<h1 id="pinbattle-title">Which pin do you prefer ?</h1>
+{% csrf_token %}
 
-{% block content %}	
+<nav id="nav-pinbattle">
+	<a id="battle_menu">Battle</a> <a id="ranking_menu">Overall ranking</a> <a id="persoranking_menu"> Your ranking </a>
+</nav>
+<!-- 
+<div id="suscribe" class=login-info>
+    <p>Want to see a pin you voted for ?</p>
+    <div class=login-button>Login with facebook</div>
+</div>
+-->
 
-	<h1 id="pinbattle-title">Which pin do you prefer ?</h1>
-	{% csrf_token %}
-	
-	<nav id="nav-pinbattle">
-		<a id="battle_menu">Battle</a>
-		<a id="ranking_menu">Overall ranking</a>
-		<a id="persoranking_menu"> Your ranking </a>
-	</nav>
-	
-	<select>
-		<option value="all">All</option>
-		{% for cat in cat_list %}
- 		<option value="{{cat.category_id}}">{{cat.category_name}}</option>
- 		{% endfor %}
-  
-	</select>
-		
+<select>
+	<option value="all">All</option> {% for cat in cat_list %}
+	<option value="{{cat.category_id}}">{{cat.category_name}}</option> {% endfor %}
+</select>
+
+
+<div id="progressbar" style="width: 150px; height: 20px"></div>
+<p id="msg">Click on the pin you prefer</p>
+<div id="main">
+	<img id="pin1" class="battle"> <img id="pin2" class="battle">
+</div>
+'
+
+<table border=0></table>
+
+
+
 {% endblock %}
