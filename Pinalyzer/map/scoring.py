@@ -2,6 +2,7 @@
 import urllib3
 import re
 import random
+import string
 
       
 class NotFound(Exception):
@@ -12,11 +13,11 @@ class Scoring:
     http = urllib3.PoolManager()
     re_title=re.compile('<title>(?P<title>.*?)</title>')
     re_contextbar=re.compile('<div id="ContextBar".*?'
-                             +'.*?<strong>(?P<nb_board>[0-9]+)</strong> Boards?.*?'
-                             +'.*?<strong>(?P<nb_pin>[0-9]+)</strong> Pins?.*?'
-                             +'.*?<strong>(?P<nb_liked>[0-9]+)</strong> Likes?.*?'
-                             +'<li>.*?<strong>(?P<nb_followers>[0-9]+)</strong> Followers.*?</li>.*?'
-                             +'<li>.*?<strong>(?P<nb_following>[0-9]+)</strong> Following.*?</li>.*?',re.DOTALL)
+                             +'.*?<strong>(?P<nb_board>[0-9,]+)</strong> Boards?.*?'
+                             +'.*?<strong>(?P<nb_pin>[0-9,]+)</strong> Pins?.*?'
+                             +'.*?<strong>(?P<nb_liked>[0-9,]+)</strong> Likes?.*?'
+                             +'<li>.*?<strong>(?P<nb_followers>[0-9,]+)</strong> Followers.*?</li>.*?'
+                             +'<li>.*?<strong>(?P<nb_following>[0-9,]+)</strong> Following.*?</li>',re.DOTALL)
     re_pin_html=re.compile('<div class="pin".*?</body>',re.DOTALL)
     re_repin=re.compile('<span class="RepinsCount">(.*?)(?P<nb_repins>[0-9]+) repin(s)?(.*?)</span>',re.DOTALL)
     re_like=re.compile('<span class="LikesCount">(.*?)(?P<nb_likes>[0-9]+) like(s)?(.*?)</span>',re.DOTALL)
@@ -28,7 +29,7 @@ class Scoring:
         match=re.search(Scoring.re_like,pin_div)
         
         if match != None:
-            return int(match.group('nb_likes'))
+            return int(string.replace(match.group('nb_likes'),',',''))
         else:
             return 0
     
@@ -36,7 +37,7 @@ class Scoring:
     def searchComment(pin_div):
         match=re.search(Scoring.re_comment,pin_div)
         if match != None:
-            return int(match.group('nb_comments'))
+            return int(string.replace(match.group('nb_comments'),',',''))
         else:
             return 0
     
@@ -44,7 +45,7 @@ class Scoring:
     def searchRepin(pin_div):
         match=re.search(Scoring.re_repin,pin_div)
         if match != None:    
-            return int(match.group('nb_repins'))
+            return int(string.replace(match.group('nb_repins'),',',''))
         else:
             return 0
         
@@ -71,14 +72,12 @@ class Scoring:
         match=re.search(Scoring.re_title,r.data)
         if match != None and match.group('title') =='Pinterest - 404':
             raise NotFound
-        
         match=re.search(Scoring.re_contextbar,r.data)
-        
-        self.nb_board=int(match.group('nb_board'))
-        self.nb_pin=int(match.group('nb_pin'))
-        self.nb_liked=int(match.group('nb_liked'))
-        self.nb_followers=int(match.group('nb_followers'))
-        self.nb_following=int(match.group('nb_following'))
+        self.nb_board=int(string.replace(match.group('nb_board'),',',''))
+        self.nb_pin=int(string.replace(match.group('nb_pin'),',',''))
+        self.nb_liked=int(string.replace(match.group('nb_liked'),',',''))
+        self.nb_followers=int(string.replace(match.group('nb_followers'),',',''))
+        self.nb_following=int(string.replace(match.group('nb_following'),',',''))
         
     def fetchPinsInfo(self, nb_pages=10):
         self.nb_like=0
@@ -112,7 +111,6 @@ class Scoring:
     def fetch(self):
         self.fetchInfo()
         self.fetchPinsInfo()
-    
     
 if __name__=='__main__':
     s=Scoring('sudzilla')

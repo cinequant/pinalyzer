@@ -57,14 +57,25 @@
     border-right: 1px dashed black
  }
 
+#login-button-score{
+    display: table;
+    margin: 0px auto;
+    font-size: 22px;    
+}
 
-#scorediv>p{
+#scorediv>#score-name{
     text-align: center;
     font-size: 20px;
     margin: 30px 0px;
 }
 
-#scorediv>div{
+#scorediv>.login-info>p{
+    text-align: center;
+    font-size: 22px;
+    margin: 5px auto;
+}
+
+#scorediv>div>#score{
 	display: block;
 	margin: 0px auto;
 	width: 200px;
@@ -72,6 +83,12 @@
 	color: white;
 	background-color: rgb(204,34,37);
     border: 1px solid rgba(0,0,0,0.5);
+        user-select: none;
+    -khtml-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+    -moz-user-select: -moz-none;
+    -webkit-user-select: none;
 }
 #score{
 	margin: 0px;
@@ -119,7 +136,6 @@ h2#name{
 }
 #how{
 	margin-top: 30px;
-	margin-bottom: 30px;
 	display: none;
 }
 
@@ -155,10 +171,60 @@ h2#name{
 	width: 700px;
 }
 
-#score-history h2, #score-distribution h2{
+#activity{
+    margin-top: 10px;
+    width: 700px;
+}
+
+#activity>h3{
+	display: table;
+	margin: 10px auto;
+	font-size: 22px;
+}
+
+
+#activity .activity-div{
+	margin: 5px 25px;
+	display: inline-block
+}
+
+#activity .activity-div>*{
+    display: inline-block;
+    text-align: center;
+    padding: 20px 0px;
+    font-size: 28px;
+    }
+
+#activity .activity-div *:last-child{
+    background-color: rgb(230,230,230);
+    width:140px;
+    border: 1px solid rgb(200,200,200);
+     border-left: 1px solid rgb(200,200,200);
+    border-top-right-radius:10px;
+    border-bottom-right-radius:10px;
+    user-select: none;
+    -khtml-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+    -moz-user-select: -moz-none;
+    -webkit-user-select: none;
+}
+
+#activity .activity-div *:first-child{
+	border-top-left-radius:10px;
+    border-bottom-left-radius:10px;
+      border: 1px solid rgb(190, 190, 190);
+    width:150px;
+}
+
+#score-history h2, #score-distribution h2, #activity h2{
     text-shadow: 0px 3px  rgba(100,100,100,0.3);
     border-bottom: 1px solid black;
     padding-bottom: 10px;
+}
+
+#activity h2{
+    margin-bottom: 20px;
 }
 .chart{
 	height: 250px;
@@ -169,6 +235,7 @@ h2#name{
 #hist-chart{
 	display: none;
 }
+
 
 
 

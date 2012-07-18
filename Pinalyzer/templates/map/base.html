@@ -38,7 +38,6 @@
 {% block below_header %} {% endblock %}
 
 <!--Google analytics script -->
-<!-- 
 <script type="text/javascript">
   var _gaq = _gaq || [];
   _gaq.push(['_setAccount', 'UA-32139124-1']);
@@ -49,7 +48,7 @@
     ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
   })();
-</script>  -->
+</script>
 
 <!--Share script 
 <script>
@@ -58,53 +57,67 @@
 </script>
 -->
 
+<!-- General use function -->
+<script>
+function getURIParam(url){
+	var vars = [], hash;
+	var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+	for(var i = 0; i < hashes.length; i++){
+		hash = hashes[i].split('=');
+		vars.push(hash[0]);
+		vars[hash[0]] = hash[1];
+	}
+	return vars;
+}
+</script>
+
 <!--Django ajax script -->
 <script>
-jQuery(document).ajaxSend(function(event, xhr, settings) {
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie != '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+$(document).ajaxSend(function(event, xhr, settings) {
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
             }
-            return cookieValue;
         }
-        function sameOrigin(url) {
-            // url could be relative or scheme relative or absolute
-            var host = document.location.host; // host + port
-            var protocol = document.location.protocol;
-            var sr_origin = '//' + host;
-            var origin = protocol + sr_origin;
-            // Allow absolute or scheme relative URLs to same origin
-            return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
-                (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
-                // or any other URL that isn't scheme relative or absolute i.e relative.
-                !(/^(\/\/|http:|https:).*/.test(url));
-        }
-        function safeMethod(method) {
-            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-        }
+        return cookieValue;
+    }
+    function sameOrigin(url) {
+        // url could be relative or scheme relative or absolute
+        var host = document.location.host; // host + port
+        var protocol = document.location.protocol;
+        var sr_origin = '//' + host;
+        var origin = protocol + sr_origin;
+        // Allow absolute or scheme relative URLs to same origin
+        return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+            (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+            // or any other URL that isn't scheme relative or absolute i.e relative.
+            !(/^(\/\/|http:|https:).*/.test(url));
+    }
+    function safeMethod(method) {
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
 
-        if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
-            xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
-        }
-    });
+    if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
+        xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+    }
+});
 </script>
 
 <body>
-    
+
 	<div id="fb-root"></div>
-	
 	<script>
 	   var fb_id=null;
 	   var access_token=null;
+	   var facebook=null;
 		// Load the SDK Asynchronously
 		(function(d) {
 			var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
@@ -118,22 +131,6 @@ jQuery(document).ajaxSend(function(event, xhr, settings) {
 			ref.parentNode.insertBefore(js, ref);
 		}(document));
 		
-		var callback_login=function(response){
-			
-			if (response.authResponse) {
-				
-                $(".logout-button, .logout-info").css('display','table');
-                $(".login-button, .login-info").css('display','none');
-                fb_id=response.authResponse.userID;
-                access_token = response.authResponse.accessToken;
-            } else {
-            	fb_id=null;
-            	access_token=null;
-                $(".login-button, .login-info").css('display','table');;
-                $(".logout-button, .logout-info").css('display','none');
-            }
-		}
-
 		// Init the SDK upon load
 		window.fbAsyncInit = function() {
 			FB.init({
@@ -144,20 +141,93 @@ jQuery(document).ajaxSend(function(event, xhr, settings) {
 				xfbml : true
 			// parse XFBML
 			});
-			
-			FB.getLoginStatus(callback_login);
-			FB.Event.subscribe('auth.statusChange',callback_login);
+			facebook=FB;
+			/* Callback used at each FB status change */
+		       var cb_login=function(response){
+		           if (response.authResponse) {
+		               $(".logout-button").css('display','table');
+		               $(".logout-info").css('display','block');
+		               $(".login-button, .login-info").css('display','none');
+		               fb_id=response.authResponse.userID;
+		               access_token = response.authResponse.accessToken;
+		               
+		               {% block script_login %}{% endblock %}
+		           } else {
+		               fb_id=null;
+		               access_token=null;
+		               $(".login-button").css('display','table');
+		               $(".login-info").css('display','block');
+		               $(".logout-button, .logout-info").css('display','none');
+		           }
+		       }
 
-			$(".login-button").click(function() {
-				FB.login(function(response){},{scope: 'email,user_likes,publish_stream'});
+		       /* Callback used the first time the user FB status is checked at the load of the page*/
+		       var cb_login_init=function (response){
+		           if (response.authResponse) {
+		               $(".logout-button").css('display','table');
+		               $(".logout-info.init").css('display','block');
+		               $(".login-button, .login-info").css('display','none');
+		               fb_id=response.authResponse.userID;
+		               access_token = response.authResponse.accessToken;
+		           } else {
+		               fb_id=null;
+		               access_token=null;
+		               $(".login-button").css('display','table');
+		               $(".login-info.init").css('display','block');
+		               $(".logout-button, .logout-info").css('display','none');
+		           }
+		       }
+			FB.getLoginStatus(cb_login_init);
+			FB.Event.subscribe('auth.statusChange',cb_login);
+
+			$(".login-button").on('click',function() {
+				FB.login(function(response){},{scope: 'publish_actions'});
 			});
 
-			$(".logout-button").click(function() {
+			$(".logout-button").on('click',function() {
 				FB.logout();
 			});
-		}
-		
+			
+			// Post an user action with open graph (FB)
+			function postOpenGraph(fb_id, action, obj, obj_url){
+				if(obj=="pin"){
+					FB.api('/'+fb_id+'/{{fb_info.app_namespace}}:'+action,'post',{ pin: obj_url, scrape:'true' },function(response){
+	                    if (!response || response.error) {
+	                    }else {
+	                    }
+	                });
+				}
+				else if(obj=="person"){
+					FB.api('/'+fb_id+'/{{fb_info.app_namespace}}:'+action,'post',{ person: obj_url, scrape:'true' },function(response){
+						
+	                    if (!response || response.error) {
+	                    }else {
+	                    }
+	                });
+					
+				}
+			}
+
+				//Listen ajax event
+	            $(document).ajaxSuccess(function(event, XMLHttpRequest, ajaxOptions){
+	                var res = JSON.parse(XMLHttpRequest.responseText);
+	                if(res.status=="OK"){
+	                    if(res.data.info_open_graph){ 
+	                        for(var i=0;i<res.data.info_open_graph.length; i++){
+	                        	x=res.data.info_open_graph[i];
+	                            postOpenGraph(x.fb_id, x.action, x.obj, x.obj_url);                         
+	                        }   
+	                    }                   
+	                }               
+	            });
+
+			
+			
+			{% block fb %}
+			{% endblock %}
+		}	
 	</script>
+
 	{% block start %}{% endblock %}
 
 	<header>
@@ -167,11 +237,11 @@ jQuery(document).ajaxSend(function(event, xhr, settings) {
 				<h1 id="title">Pinalyzer</h1>
 				<p id=title-text>Your best friend to enjoy pinterest</p>
 			</div>
-			<div class="login-button">Login with facebook</div>
-			<div class="logout-button">Logout</div>
+			<div class="login-button init">Login with facebook</div>
+			<div class="logout-button init">Logout</div>
 
 			<nav id="main-nav">
-				<a id="nav-battle" href="/">Pin Battle</a> <a id="nav-score" href="/score">Score</a> <a id="nav-invite" href="/invite">Invite</a>
+				<a id="nav-battle" href="/">Pin Battle</a> <a id="nav-score" href="/score">Analytics</a> <a id="nav-invite" href="/invite">Invite</a> <!-- <a id="nav-about" href="/about">About</a> -->
 			</nav>
 
 		</div>

@@ -101,6 +101,13 @@ td:first-child{
 	font-size: 50px;
 }
 
+#err{
+	margin: 20px auto;
+	display: table;
+	color: rgb(204,34,37);
+	font-size: 22px;
+}
+
 table a{
 	color: rgb(50,50,50);
 	text-decoration:none;
@@ -132,3 +139,40 @@ td:first-child div{
     font-size: 14px;
     margin: 0px auto;
 }
+
+#login-button-ranking{
+	display:table;
+    margin: 20px auto 0px auto;
+    padding: 2px 7px;
+    color:rgb(252,252,252);
+    font-size:25px;
+    text-align:center;
+    box-shadow:0px 1px 2px rgba(0,0,0,0.3);
+    cursor: pointer;
+    background:#5F78AB;
+    border:1px solid #1a356e;
+    font-weight:700;
+    font-family:"lucida grande",tahoma,verdana,arial,sans-serif;
+    
+     user-select: none;
+    -khtml-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+    -moz-user-select: -moz-none;
+    -webkit-user-select: none;
+}
+
+#login-button-ranking:active{
+    background:#3B5998;
+}
+
+#login-ranking{
+	display: none;
+	margin-top: 100px;
+}
+#login-ranking p{
+	text-align: center;
+	width: 400px;
+	font-size: 20px
+}
+

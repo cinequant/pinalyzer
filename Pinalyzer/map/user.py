@@ -70,10 +70,8 @@ class User:
     def getUserIdList(nb_page=10):
         res=[]
         for p in range(1,nb_page+1):
-            print p
             r=http.request('GET','http://pinterest.com/popular/?lazy=1&page='+str(p))
             l=[match.group('id') for match in re.finditer(User.re_name,r.data) if match.group('id')[:3] !='all' ]
-            print l
             res.extend(list(set(l)))
         return res
     
@@ -91,7 +89,6 @@ class User:
                 u.saveDB()
             except Exception:
                 not_fetched+=1
-                print 'one user not fetched'
         return not_fetched,total
                 
                 
@@ -112,7 +109,6 @@ class User:
                     u.saveDB()
                 except Exception:
                     not_fetched += 1
-                    print 'one user not fetched'
         return not_fetched,total
                     
         
@@ -132,14 +128,10 @@ class User:
         return 'http://www.pinterest.com/'+str(self.id)
         
     def fetchUser(self):
-        print 'IIIDD4'
-        print self.id
         r = http.request('GET', self.url())
-        
         match=re.search(Scoring.re_title,r.data)
         if match != None and match.group('title') =='Pinterest - 404':
             raise NotFound
-        
         match=re.search(User.re_user,r.data)
         if match == None:
             raise NotFound

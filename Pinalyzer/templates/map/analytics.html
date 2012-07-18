@@ -7,9 +7,26 @@
 <script src="static/js/modules/exporting.js" type="text/javascript"></script>
 <script>
 	// Charts
-	var rep_chart;
-	var hist_chart;
-	var hist_stock;
+	var rep_chart = null;
+	var hist_chart = null;
+	var hist_stock = null;
+	var user_id=null;
+	
+	function setNum(x, selector){
+		if (x>0){
+			c='green';
+			num= '+'+x
+		}
+		else if (x==0){
+			c='grey'
+			num= '--'
+		}
+		else{
+			c='red'
+			num= x
+		}
+		$(selector).html(num).css('color',c);
+	}
 
 	function setRepartitionChart() {
 		$.ajax({
@@ -57,10 +74,10 @@
 			dataType : "json"
 		});
 	}
-	
-	function setHistStock(data,name){
-		       
-	hist_stock = new Highcharts.StockChart({
+
+	function setHistStock(data, name) {
+
+		hist_stock = new Highcharts.StockChart({
 			chart : {
 				renderTo : 'hist-stock'
 			},
@@ -70,71 +87,153 @@
 			},
 
 			title : {
-				text : name+"'s score history"
+				text : name + "'s score history"
 			},
-			
-			yAxis : {
-                minPadding: 0.05,
-                title : {
-                    text : 'Score'
-                },
-            },
 
-			series : [{
+			yAxis : {
+				minPadding : 0.05,
+				title : {
+					text : 'Score'
+				},
+			},
+
+			series : [ {
 				name : 'score',
 				data : data,
 				marker : {
-                    enabled : true,
-                    radius : 3
-                },
-                shadow : true,
-                tooltip : {
-                    valueDecimals : 2
-                }
+					enabled : true,
+					radius : 3
+				},
+				shadow : true,
+				tooltip : {
+					valueDecimals : 2
+				}
 			} ]
 		});
 	}
-	
-	function setHistChart(data,name){
-		
+
+	function setHistChart(data, name) {
+
 		hist_chart = new Highcharts.Chart({
-            chart : {
-                renderTo : 'hist-chart',
-                type : 'spline'
-            },
-            title : {
-                text : 'The last few days'
-            },
-            xAxis : {
-            	type: 'datetime',
-                dateTimeLabelFormats: { // don't display the dummy year
-                    month: '%e. %b',
-                    year: '%b'
-                }
-            },
-            yAxis : {
-                minPadding: 0.20,
-                title : {
-                    text : 'Score'
-                },
-                startOnTick: true,
-            },
-            tooltip : {
-                formatter : function() {
-                    return '' + this.y + ' %';
-                }
-            },
-            plotOptions : {
-                column : {
-                    pointPadding : 0.2,
-                    borderWidth : 0
-                }
-            },
-            series : [ {
-                name : name,
-                data : data
-            } ]
-        });
+			chart : {
+				renderTo : 'hist-chart',
+				type : 'spline'
+			},
+			title : {
+				text : 'The last few days'
+			},
+			xAxis : {
+				type : 'datetime',
+				dateTimeLabelFormats : { // don't display the dummy year
+					month : '%e. %b',
+					year : '%b'
+				}
+			},
+			yAxis : {
+				minPadding : 0.20,
+				title : {
+					text : 'Score'
+				},
+				startOnTick : true,
+			},
+			tooltip : {
+				formatter : function() {
+					return '' + this.y + ' %';
+				}
+			},
+			plotOptions : {
+				column : {
+					pointPadding : 0.2,
+					borderWidth : 0
+				}
+			},
+			series : [ {
+				name : name,
+				data : data
+			} ]
+		});
+	}
+
+	function setUserInfo(user_id) {
+		$("#analytics-info").hide();
+		$("#score-history,#score-distribution").hide();
+		$("#score-disitribution").hide();
+		$("#how").hide();
+		$("#loading-div").css('visibility', 'visible');
+		$("#err").hide();
+		$.ajax({
+			type : 'POST',
+			url : 'scoring',
+			data : {
+				user_id : user_id,
+				fb_id : fb_id,
+			},
+			success : function(res) {
+				if (res.status == "OK") {					
+					$("#photo").attr({
+						src : res.data.user.photo_url
+					});
+					$("#name").html(res.data.user.name);
+					$("#scorediv>#score-name").html(res.data.user.name + "'s score :")
+					$("#location").html(res.data.user.location);
+					$("#boards").html(res.data.stat.nb_board);
+					$("#pins").html(res.data.stat.nb_pin);
+					$("#liked").html(res.data.stat.nb_liked);
+					$("#followers").html(res.data.stat.nb_followers);
+					$("#following").html(res.data.stat.nb_following);
+
+					if (res.data.prev_stat) {
+						score_incr = (res.data.score - res.data.prev_score).toFixed(1)
+						boards_incr = res.data.stat.nb_board - res.data.prev_stat.nb_board
+						pins_incr = res.data.stat.nb_pin - res.data.prev_stat.nb_pin
+						liked_incr = res.data.stat.nb_liked - res.data.prev_stat.nb_liked
+						followers_incr = res.data.stat.nb_followers - res.data.prev_stat.nb_followers
+						following_incr = res.data.stat.nb_following - res.data.prev_stat.nb_following
+					}
+					else{
+						score_incr = res.data.score.toFixed(1);
+                        boards_incr = res.data.stat.nb_board
+                        pins_incr = res.data.stat.nb_pin
+                        liked_incr = res.data.stat.nb_liked
+                        followers_incr = res.data.stat.nb_followers
+                        following_incr = res.data.stat.nb_following
+                    }
+					
+					setNum(boards_incr,"#boards-incr");
+					setNum(pins_incr,"#pins-incr");
+					setNum(liked_incr,"#liked-incr");
+					setNum(followers_incr,"#followers-incr");
+					setNum(following_incr,"#following-incr");
+					
+					// if the user is logged
+					if(fb_id){
+						setNum(score_incr,"#score-incr");
+						$("#score").html(res.data.score.toFixed(1));
+						setHistStock(res.data.history, res.data.user.name);
+						if (rep_chart == null) {
+                            setRepartitionChart()
+                        }
+						$("#score-history").show();
+                        $("#score-distribution").show();
+                        $('#how').show();
+					}
+					else{
+						setNum(0,"#score-incr");
+                        $("#score").html('??');
+                        $("#score-history").hide();
+                        $("#score-distribution").hide();
+                        $('#how').hide();
+					}
+					$('#analytics-info').show();
+
+				} else {
+					$("#err").html(res.data);
+					$("#err").show();
+				}
+				$("#loading-div").css('visibility', 'hidden');
+			},
+			dataType : "json",
+		});
 	}
 
 	$(document).ready(function() {
@@ -143,70 +242,59 @@
 			'color' : 'white'
 		});
 
+		// display the score if an user_id is specified in the url
+		user = getURIParam(window.location)['user'];
+		if (user) {
+			user_id=user
+			setUserInfo(user_id);
+		}
+		$('form').submit(function(event) {
+			event.preventDefault();
+		});
+
+		$('#button').submit(function(event) {
+			event.preventDefault();
+		});
+
 		$('#button').click(function(event) {
 			event.preventDefault();
-			$("#analytics-info").hide();
-			$("#how").hide();
-			$("#loading-div").css('visibility', 'visible');
-			$("#err").hide();
-			$.ajax({
-				type : 'POST',
-				url : 'scoring',
-				data : {
-					user_id : $("#textfield").val()
-				},
-				success : function(res) {
-					if (res.status == "OK") {
-						$("#score").html(res.data.score.toFixed(1));
-						$("#photo").attr({
-							src : res.data.user.photo_url
-						});
-						$("#name").html(res.data.user.name);
-						$("#scorediv>p").html(res.data.user.name + "'s score :")
-						$("#location").html(res.data.user.location);
-						$("#boards").html(res.data.stat.nb_board);
-						$("#pins").html(res.data.stat.nb_pin);
-						$("#liked").html(res.data.stat.nb_liked);
-						$("#followers").html(res.data.stat.nb_followers);
-						$("#following").html(res.data.stat.nb_following);
-						setHistChart(res.data.last_history, res.data.user.name);
-						setHistStock(res.data.history, res.data.user.name);
-						$("#analytics-info").css('display', 'block');
-
-						$('#analytics-info').show();
-						$('#how').show();
-
-					} else {
-						$("#err").html(res.data);
-						$("#err").show();
-					}
-
-					$("#loading-div").css('visibility', 'hidden');
-
-					setRepartitionChart();
-
-				},
-				dataType : "json",
-			});
+			user_id = $("#textfield").val();
+			setUserInfo(user_id);
 		});
 
 		$('#how h2').click(function() {
 			$(this).next().slideToggle();
-
 		});
 
 	});
 </script>
-{% endblock %} 
+{% endblock %}
+
+{% block fb %}
+FB.Event.subscribe('auth.statusChange',function(response){
+        if(response.authResponse){
+            fb_id=response.authResponse.userID;
+            access_token=response.authResponse.accessToken;
+            
+        }
+        else{
+            fb_id=null;
+            access_token=null;
+        }
+        if(user_id != null){
+            setUserInfo(user_id);
+        }
+    });
+
+{% endblock %}
 
 {% block content %}
 <h2 id="score-title">Enter your Pinterest id and get your score.</h2>
 <div id="input">
 	<form>
-		<input id="textfield" type="text" name="user_id" /> <input
-			id="button" type="submit" value="Get your score" />
-	</form>
-	{% csrf_token %}
+		<input id="textfield" type="text" name="user_id" /> 
+		<input id="button" type="submit" value="Get your score" />
+	</form>{% csrf_token %}
 
 </div>
 
@@ -266,12 +354,48 @@
 	</div>
 
 	<div id="scorediv">
-		<p>Your Pinalyzer score :</p>
+		<p id=score-name>Your Pinalyzer score :</p>
 		<div>
-			<p id="score">99.9</p>
+			<p id="score">??</p>
+		</div>
+		<div class="login-info init">
+		  <p> Want to see your score ?</p>
+		  <div class="login-button " id="login-button-score">Login with facebook</div>
 		</div>
 	</div>
-	
+
+	<div id="activity">
+		<h2>Since yesterday...</h2>
+        
+        <h3> Influence</h3>
+		<div class="activity-div">
+			<span id="score-incr">--</span><span>Score</span>
+		</div>
+
+		<div class="activity-div">
+			<span id="followers-incr">--</span><span>Followers</span>
+		</div>
+
+		<div class="activity-div">
+			<span id="pins-incr">--</span><span>Pins</span>
+		</div>
+
+		<div class="activity-div">
+			<span id="boards-incr">--</span><span>Boards</span>
+		</div>
+        
+        <h3>Activity</h3>
+		<div class="activity-div">
+			<span id="following-incr">--</span><span>Following</span>
+		</div>
+
+		<div class="activity-div">
+			<span id="liked-incr">--</span><span>Likes</span>
+		</div>
+
+
+	</div>
+
 	<div id="score-history">
 	   <h2>Score History</h2>
 	   <div class="chart" id="hist-stock"></div>
@@ -304,5 +428,7 @@
 			people like, repin and comment your pins.</p>
 	</div>
 </div>
+
+<footer></footer>
 
 {% endblock %}

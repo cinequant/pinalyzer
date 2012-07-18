@@ -7,6 +7,7 @@
 	var limit=5000; // Waiting time for the next couple
 	var time=limit;
 	var interval; // Interval object
+	var section="battle";
 	
 	function getSmaller(url){
 		return url.substr(0,url.length-5) +'b'+url.substr(url.length-4,url.length)
@@ -98,34 +99,29 @@
 								}
 							});
 						}
-					});
-					
-					
-					
-					
+					});	
 				}
 				else{
-					alert(result.data);
+					$("#err").html(result.data).show();
 				}
 			},
 		})
 	}
-	
-	
-	
+
 	function sendResult(choice, callback) {
-	pin1_id = $("#pin1").attr("pin_id");
+		pin1_id = $("#pin1").attr("pin_id");
 		pin2_id = $("#pin2").attr("pin_id");
 		$.ajax({
 			type : "POST",
 			url : "savematch",
-			data : {pin1_id : pin1_id,
-                pin2_id : pin2_id,
-                choice : choice,
-                fb_id : fb_id,},
+			data : {
+				pin1_id : pin1_id,
+				pin2_id : pin2_id,
+				choice : choice,
+				fb_id : fb_id,
+			},
 			success : callback,
 		});
-
 	}
 
 	function setRanking(perso) {
@@ -137,13 +133,13 @@
 		$.get("ranking", {
 			category : category,
 			perso : perso,
-			fb_id: fb_id,
+			fb_id : fb_id,
 		}, function(result) {
 			if (result.status == "OK") {
 				$("table").css('display', 'none');
-				for ( var i = 0; i < result.data.length; i++) {
-					for ( var j = 0; j < result.data[i].length; j++) {
-						pin = result.data[i][j];
+				for ( var i = 0; i < result.data.ranking_list.length; i++) {
+					for ( var j = 0; j < result.data.ranking_list[i].length; j++) {
+						pin = result.data.ranking_list[i][j];
 						var html = '<tr>';
 						html += '<td><div>' + (i + 1) + '</div></td>';
 						html += '<td><a href="http://pinterest.com/pin/'+pin.pin_id+'"><img src="' + getSmaller(pin.url) + '"/></a></td>';
@@ -169,47 +165,11 @@
 					$(this).css('background-color', 'rgba(255,255,255,0)');
 				})
 			} else {
-				alert(result['data']);
+				$("#err").html(result.data).show();
 			}
 		});
 	}
-
-	jQuery(document).ajaxSend(function(event, xhr, settings) {
-		function getCookie(name) {
-			var cookieValue = null;
-			if (document.cookie && document.cookie != '') {
-				var cookies = document.cookie.split(';');
-				for ( var i = 0; i < cookies.length; i++) {
-					var cookie = jQuery.trim(cookies[i]);
-					// Does this cookie string begin with the name we want?
-					if (cookie.substring(0, name.length + 1) == (name + '=')) {
-						cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-						break;
-					}
-				}
-			}
-			return cookieValue;
-		}
-		function sameOrigin(url) {
-			// url could be relative or scheme relative or absolute
-			var host = document.location.host; // host + port
-			var protocol = document.location.protocol;
-			var sr_origin = '//' + host;
-			var origin = protocol + sr_origin;
-			// Allow absolute or scheme relative URLs to same origin
-			return (url == origin || url.slice(0, origin.length + 1) == origin + '/') || (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
-			// or any other URL that isn't scheme relative or absolute i.e relative.
-			!(/^(\/\/|http:|https:).*/.test(url));
-		}
-		function safeMethod(method) {
-			return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-		}
-
-		if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
-			xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
-		}
-	});
-
+	
 	function startChrono() {
 		clearInterval(interval);
 		time = limit;
@@ -248,6 +208,7 @@
 	}
 
 	function displayBattle() {
+		section="battle";
 		$("#progressbar, #msg, #main").show();
 		setPins();
 		$("select").change(function() {
@@ -259,6 +220,12 @@
 	}
 
 	function displayRanking(perso) {
+		if(perso){
+			section="rankingperso";
+		}
+		else{
+			section="ranking";
+		}
 		if (typeof perso == "undefined") {
 			perso = false;
 		}
@@ -270,55 +237,122 @@
 			displayRanking(perso);
 		});
 	}
-
+	
 	function resetPage() {
-		clearInterval(interval);
-		$("#main img").off();
-		$("#progressbar, #msg, #main, table").hide();
-		$("table").children().remove();
+        clearInterval(interval);
+        $("#main img").off();
+        $("#progressbar, #msg, #main, table,#err").hide();
+        $("table").children().remove();
+        $("#login-ranking").hide();
+        $("select").off();
+        $(".battle").css('opacity','0');
 
+    }
+	
+	function goToBattle(){
+		resetPage();
+		section="battle";
+        $("#login-ranking").hide();
+        displayBattle();
+	}
+	
+	function goToOverallRanking(){
+		resetPage();
+		section="ranking";
+        $("#login-ranking").hide();
+        displayRanking();
+	}
+	
+	function goToYourRanking(){
+		resetPage();
+		section="rankingperso";
+        if (fb_id != null){
+            displayRanking(true);
+        }
+        else{
+            $("#login-ranking").show();
+        }
 	}
 
 	$(document).ready(function() {
+		// Color the page link in the general nav
 		$("#nav-battle").css({
 			'background-color' : 'rgb(204,34,37)',
 			'color' : 'white'
 		});
+				
+		// in the pin battle app, 
 		$("nav#nav-pinbattle a").click(function(event) {
 			event.preventDefault();
 			resetPage();
 			if (this.id == "battle_menu") {
-				displayBattle();
+				goToBattle();
 			} else if (this.id == "ranking_menu") {
-				displayRanking();
+				goToOverallRanking();
 			} else {
-				displayRanking(true);
+				goToYourRanking();
 			}
-		})
-
-		displayBattle();
-
+		});
+				
+		section_param=getURIParam(window.location)['section'];
+		if(section_param=='overall_ranking'){
+			goToOverallRanking();
+		}
+		else if(section_param=='ranking'){
+			goToYourRanking();
+		}
+		else{
+			goToBattle();
+		}
 		$("body").off();
 	});
-</script>
+	
 
-{% endblock %} {% block content %}
+</script>
+{% endblock %}
+
+
+
+{% block fb %}
+FB.Event.subscribe('auth.statusChange',function(response){
+        if(response.authResponse){
+            fb_id=response.authResponse.userID;
+            access_token=response.authResponse.accessToken;
+            
+        }
+        
+        if(section=="rankingperso"){
+            resetPage();
+        
+            if (fb_id != null){
+                displayRanking(true);
+            }
+            else{
+                $("#login-ranking").show();
+            }
+        }
+    });
+    
+$("#login-button-ranking").click(function(){
+
+    FB.login(function(response){},{scope: 'email,user_likes,publish_actions'});
+});
+
+{% endblock %}
+
+{% block content %}
 <h1 id="pinbattle-title">Which pin do you prefer ?</h1>
 {% csrf_token %}
 
 <nav id="nav-pinbattle">
 	<a id="battle_menu">Battle</a> <a id="ranking_menu">Overall ranking</a> <a id="persoranking_menu"> Your ranking </a>
 </nav>
-<!-- 
-<div id="suscribe" class=login-info>
-    <p>Want to see a pin you voted for ?</p>
-    <div class=login-button>Login with facebook</div>
-</div>
--->
 
 <select>
-	<option value="all">All</option> {% for cat in cat_list %}
-	<option value="{{cat.category_id}}">{{cat.category_name}}</option> {% endfor %}
+	<option value="all">All</option>
+	{% for cat in cat_list %}
+	<option value="{{cat.category_id}}">{{cat.category_name}}</option>
+	{% endfor %}
 </select>
 
 
@@ -327,10 +361,12 @@
 <div id="main">
 	<img id="pin1" class="battle"> <img id="pin2" class="battle">
 </div>
-'
 
-<table border=0></table>
+<p id="err"></p>
+<div id="login-ranking">
+	<p style="margin: 0px auto; width: 400px;">Login with facebook to see your personnal ranking and more.</p>
+	<div id="login-button-ranking">Login with facebook</div>
+</div>
 
-
-
+<table border=0 ></table>
 {% endblock %}

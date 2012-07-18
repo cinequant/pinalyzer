@@ -25,6 +25,9 @@ urlpatterns = patterns('',
          url(r'^savematch$','map.views.savematch'),
          url(r'^distribution','map.views.distribution'),
          url(r'^scoring','map.views.get_score'),
+         url(r'^score_img$','map.views.score_img'),
+         url(r'^pin$','map.views.pin'),
+         url(r'^about','map.views.about'),
        #   url(r'^$', 'pinalyzer.pinapp.views.index'),
         
 )
