@@ -3,6 +3,7 @@ from django.utils.simplejson import  JSONEncoder
 from django.db.models import Model
 import datetime
 from map.user import User
+from map.pin import Pin
 #from django.core.serializers import serialize
 
 class MyEncoder(JSONEncoder):
@@ -12,7 +13,7 @@ class MyEncoder(JSONEncoder):
         """
         if isinstance(obj, QuerySet):
             return list(obj)
-        elif isinstance(obj,User):
+        elif isinstance(obj,User) or isinstance(obj, Pin):
             return obj.__dict__
         elif isinstance(obj, datetime.datetime):
             return {'year':obj.year,'month':obj.month,'day': obj.day}

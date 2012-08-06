@@ -22,7 +22,8 @@ class UserModel(models.Model):
 	
 	def latest_stat(self):
 		h=self.get_stat_history()
-		return h[len(h)-1]
+		if (len(h)>0):
+			return h[len(h)-1]
 	
 	def get_history(self):
 		h=self.get_stat_history()
@@ -37,11 +38,15 @@ class UserModel(models.Model):
 	def get_distribution(cls):
 		rep=[0]*10
 		user_q=cls.objects.all()
+		nb=0
 		for u in user_q:
-			s=u.latest_stat().score()
-			i=int(s)/10
-			rep[i]+=1
-		return [int((float(x)/float(len(user_q)))*1000)/10.0 for x in rep]
+			stat=u.latest_stat()
+			if stat!=None:
+				nb+=1
+				s=stat.score()
+				i=int(s)/10
+				rep[i]+=1
+		return [int((float(x)/float(nb))*1000)/10.0 for x in rep]
 		
 	
 	class Meta:
@@ -71,10 +76,34 @@ class LocationModel(models.Model):
 	lng=models.FloatField()
 	class Meta:
 		app_label = 'map'
+
+
+"""
+class BoardModel(models.Model):
+	user=models.ForeignKey('UserModel')
+	nb_followers=models.IntegerField(default=0)
+	board_id=models.CharField(max_length=200)
+	board_name=models.CharField(max_length=200)
+	class Meta:
+		app_label = 'map'
+		unique_together = ('user', 'board_id',)
+		
+class PinBoardModel(models.Model):
+	boardmodel=models.ForeignKey('BoardModel')
+	pin_url=models.URLField(max_length=200)
+	pin_id=models.CharField(unique=True, max_length=200)
+	
+class PinBoardStatModel(models.Model):
+	pinboardmodel=models.ForeignKey('PinBoardModel')
+	nb_repin=models.IntegerField(default=0)
+	nb_comment=models.IntegerField(default=0)
+	nb_like=models.IntegerField(default=0)
+	date=models.DateTimeField(auto_now_add=True)
+"""
 	
 class PinModel(models.Model):
 	id = models.AutoField(primary_key=True)
-	url=models.URLField(unique=True,max_length=200)
+	url=models.URLField(max_length=200)
 	score=models.IntegerField(default=0)
 	match=models.IntegerField(default=0)
 	pin_id=models.CharField(unique=True,max_length=200)
@@ -106,19 +135,19 @@ class UserStatModel(models.Model):
 	user=models.ForeignKey('UserModel') 
 	nb_board=models.IntegerField(default=0)
 	nb_pin=models.IntegerField(default=0)
-	nb_liked=models.IntegerField(default=0)
+	nb_like=models.IntegerField(default=0)
 	nb_followers=models.IntegerField(default=0)
 	nb_following=models.IntegerField(default=0)
 	nb_repin=models.IntegerField(default=0) # estimé
 	nb_comment=models.IntegerField(default=0) # estimé
-	nb_like=models.IntegerField(default=0) # estimé
+	nb_liked=models.IntegerField(default=0) # estimé
 	
 	def score(self):
 		# Poids
 		w_followers=45.0
 		w_following=3.0
 		w_pin=5.0
-		w_like=7.0
+		w_liked=7.0
 		w_comment=20
 		w_repin=20
 		
@@ -127,7 +156,7 @@ class UserStatModel(models.Model):
 		e_followers=500
 		e_following=100
 		e_pin=500
-		e_like=1000
+		e_liked=1000
 		e_comment=200
 		e_repin=1500
 		
@@ -135,7 +164,7 @@ class UserStatModel(models.Model):
 		r_followers=float(self.nb_followers)/float(e_followers)
 		r_following=float(self.nb_following)/float(e_following)
 		r_pin=float(self.nb_pin)/float(e_pin)
-		r_like=float(self.nb_like)/float(e_like)
+		r_liked=float(self.nb_liked)/float(e_liked)
 		r_comment=float(self.nb_comment)/float(e_comment)
 		r_repin=float(self.nb_repin)/float(e_repin)
 		
@@ -144,25 +173,23 @@ class UserStatModel(models.Model):
 		print 'r_followers %f'% r_followers,
 		print 'r_following %f'% r_following,
 		print 'r_pin %f'% r_pin,
-		print 'r_like %f'% r_like,
+		print 'r_liked %f'% r_liked,
 		print 'r_comment %f'% r_comment,
 		print 'r_repin %f'% r_repin,
 		"""
-			   
 		c=60
 		d=3
 
 		r_followers=math.log(1+c*r_followers)
 		r_following=math.log(1+c*r_following)
 		r_pin=math.log(1+c*r_pin)
-		r_like=math.log(1+c*r_like)
+		r_liked=math.log(1+c*r_liked)
 		r_comment=math.log(1+c*r_comment)
 		r_repin=math.log(1+c*r_repin)
 		
-	   
 
-		res=w_followers*r_followers+ w_following*r_following + w_pin*r_pin+w_like*r_like+w_comment*r_comment+w_repin*r_repin
-		res_moy=(w_followers+w_following+w_pin+w_like+w_comment+w_repin)*math.log(c/d+1)
+		res=w_followers*r_followers+ w_following*r_following + w_pin*r_pin+w_liked*r_liked+w_comment*r_comment+w_repin*r_repin
+		res_moy=(w_followers+w_following+w_pin+w_liked+w_comment+w_repin)*math.log(c/d+1)
 		
 		# (1-e(-a*res_moy))*100=50
 		# a=-ln(1/2)/res_moy
@@ -174,22 +201,32 @@ class UserStatModel(models.Model):
 		
 		"""
 		
-		c=2 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		c=2 # 
 		
 		r_followers=w_followers*r_followers/(r_followers+math.log(c+1))
 		r_following=w_following*r_following/(r_following+math.log(c+1))
 		r_pin=w_pin*r_pin/(r_pin+math.log(c+1))
-		r_like=w_like*r_like/(r_like+math.log(c+1))
+		r_liked=w_liked*r_liked/(r_liked+math.log(c+1))
 		r_comment=w_comment*r_comment/(r_comment+math.log(c+1))
 		r_repin=w_repin*r_repin/(r_repin+math.log(c+1))
 		
-		score=r_followers+r_following+r_pin+r_like+r_repin+r_comment
+		score=r_followers+r_following+r_pin+r_liked+r_repin+r_comment
 		"""
 		
 		return score
 	
 	class Meta:
 		app_label = 'map'
+		
+		
+class QuizzVoteModel(models.Model):
+	user=models.ForeignKey('UserModel')
+	voted_pin=models.ForeignKey('PinModel')
+	
+class MatchModel(models.Model):
+	pin1=models.ForeignKey('PinModel',related_name='+')
+	pin2=models.ForeignKey('PinModel',related_name='+')
+	
 		
 		
 

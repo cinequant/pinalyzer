@@ -1,48 +1,18 @@
 # -*- coding: utf-8 -*-
-############################
-# Pinalyser
-# some primitive functions             #
-# author: vl@cinequant.com #
-############################
 from django.db import  IntegrityError
 from django.utils.simplejson import loads, dumps
 from models import UserModel, LocationModel, UserStatModel
-from scoring import  Scoring, NotFound
+from userheader import UserHeader
+from pinlistpage import PinListPage, NoPinsError
 
 import urllib3
 import re
-import string
+import string, random
 import datetime
+import fun
+from threading import Thread, Lock
 
-# the person div reg exp('/user_id/followers/' or '/user_id/following/')
-re_html_pers=re.compile('<div class="person">.*?<div class="PersonPins">',re.DOTALL)
-# Person informations (id,name,photo,location)
-re_user=re.compile('class="PersonImage ImgLink" style="background-image: url\((?P<photo>.+?)\)">'+'.*?'
-                   +'<h4><a href="/(?P<id>.+?)/">(?P<name>.+?)</a></h4>'+'.*?'
-                   +'((<span class="icon location"></span>(?P<location>.+?(?=\n)))|PersonPins">)', re.DOTALL) 
-# Marker value ('pinterest.com/user_id/followers/' or 'pinterest.com/user_id/following/')
-re_follow_marker=re.compile('\.pageless\({(.*?)"marker": (?P<marker>.+?)(?=\n)',re.DOTALL)
 http = urllib3.PoolManager()
-
-def searchPersons(source):
-    html_list= re.findall(re_html_pers,source) 
-    return html_list
-
-def searchUserInfo(person_html):
-    match=re.search(re_user,person_html)
-    f_id=match.group('id')
-    f_loc=match.group('location')
-    if f_loc != None:
-        f_loc=f_loc.decode('utf-8')  
-    f_name=match.group('name')      
-    f_photo=match.group('photo')
-    return (f_id,f_loc,f_name,f_photo)  
-
-def searchMarker(person_html):
-    match=re.search(re_follow_marker,person_html)
-    return int(match.group('marker'))
-
-
 
 # Calculate from an adress, the corresponding geographic coordinates ( a (lat,lng) couple ), using geocoding service ( google map api).
 def addressToLatLng(address):
@@ -58,13 +28,6 @@ def addressToLatLng(address):
 
 
 class User:
-    
-    re_user=re.compile('<div id="ProfileHeader">.*?'
-                       +'<img src="(?P<url>.*?)".*?'
-                       +'<h1>(?P<name>.*?)</h1>.*?'
-                       +'((<span class="icon location"></span>(?P<location>.+?(?=\n)))|</ul>)', re.DOTALL)
-    
-    re_name=re.compile('href="/(?P<id>[^/]+?)/?"[^>]*class="ImgLink"')
     
     @staticmethod
     def getUserIdList(nb_page=10):
@@ -110,40 +73,167 @@ class User:
                 except Exception:
                     not_fetched += 1
         return not_fetched,total
+    
+    @staticmethod
+    def modelToUser(u_model):
+        u=User(u_model.user_id)
+        u.name=u_model.name
+        u.photo_url=u_model.photo_url
+        u.location=u_model.location
+        return u
                     
         
-    def __init__(self,user_id,location=None, name=None, photo_url=None):
-        self.id=user_id # User id in pinterest, each user have a unique id
-        self.name=name # User displayed name
+    def __init__(self,user_id,location=None, name=None, photo_url=None,nb_followers=None,nb_following=None):
+        self.id=user_id # User id in pinterest
+        self.name=name # User name
         self.photo_url=photo_url 
-        self.scoring=None
-        self.followers=[]
-        self.following=[]
-        
-        self.location=location #User location , a string like "Paris,France"
+        self.followers=None
+        self.following=None
+        self.nb_followers=nb_followers
+        self.nb_following=nb_following
+        self.nb_pin=None
+        self.nb_repin=None
+        self.location=location #User location , ex: "Paris,France"
         self.lat=None # Latitude
         self.lng=None # Longitude
+    def __str__(self):
+        return '{self.id},{self.name}'.format(self=self)
+    
+    def __eq__(self,o):
+        return self.id==o.id
+    
+    def __hash__(self):
+        return self.id
         
     def url(self):
-        return 'http://www.pinterest.com/'+str(self.id)
+        return 'http://www.pinterest.com/{0}'.format(self.id)
         
-    def fetchUser(self):
-        r = http.request('GET', self.url())
-        match=re.search(Scoring.re_title,r.data)
-        if match != None and match.group('title') =='Pinterest - 404':
-            raise NotFound
-        match=re.search(User.re_user,r.data)
-        if match == None:
-            raise NotFound
-        self.name=match.group('name')
-        self.location=match.group('location')
-        self.photo_url=match.group('url')
-        
-        
+    def fetchUser(self,header_info=None):
+        if header_info==None:
+            header_info=UserHeader(self.id)
+            header_info.fetch()
+        self.name=header_info.name
+        self.location=header_info.location
+        self.photo_url=header_info.photo_url
+        self.nb_board=header_info.nb_board
+        self.nb_pin=header_info.nb_pin
+        self.nb_like=header_info.nb_like
+        self.nb_followers=header_info.nb_followers
+        self.nb_following=header_info.nb_following     
+            
     def fetchScoring(self):
-        self.scoring=Scoring(self.id)
-        self.scoring.fetch()
+        if not self.nb_pin:
+            self.fetchUser()
+        pins_info=PinListPage('{0}/pins/?page='.format(self.url()), self.id)
+        nb_pages=self.nb_pin/50 + (self.nb_pin%50 !=0)
+        pins_info.fetch(nb_pages)
+        pins_info.calcScoringInfo(self.nb_pin)
+        self.nb_liked=pins_info.nb_liked
+        self.nb_comment=pins_info.nb_comment
+        self.nb_repin=pins_info.nb_repin
+        
+    def fetchFollowers(self, nb_page):
+        from followpage import FollowPage
+        f_page=FollowPage(self.id,'followers')
+        f_page.fetch(nb_page)
+        self.fetchUser(f_page.user_info)
+        self.saveDB()
+        self.followers=f_page.follow_list
+        
+    def fetchFollowing(self, nb_page):
+        from followpage import FollowPage
+        f_page=FollowPage(self.id,'following')
+        f_page.fetch(nb_page)
+        self.fetchUser(f_page.user_info)
+        self.saveDB()
+        self.following=f_page.follow_list
+        
+    def getBestFollowers(self,nb, key=lambda u: u.nb_followers):
+        if self.followers==None:
+            self.fetchFollowers(1)
+        self.followers.sort(key=key)
+        nb=min(nb,len(self.followers))
+        return self.followers[-nb:]
     
+    def getBestFollowing(self,nb, key=lambda u: u.nb_followers):
+        if self.following==None:
+            self.fetchFollowing(1)
+        self.following.sort(key=key)
+        nb=min(nb,len(self.following))
+        return self.following[-nb:]
+    
+    def getAlikes(self):
+        best_following=self.getBestFollowing(10)
+        if best_following:
+            best_following=random.sample(best_following,1)
+            alikes=[]
+            thread_list=[]
+            lock=Lock()
+            for u in best_following:
+                def task(user):
+                    user.fetchFollowers(1)
+                    best_followers=user.followers
+                    lock.acquire()
+                    alikes.extend(best_followers)
+                    lock.release()
+                t=Thread(target=task,args=(u,))
+                thread_list.append(t)      
+            for t in thread_list:
+                t.start()
+            for t in thread_list:
+                t.join()
+            alikes=fun.sort_by_freq(alikes)
+            alikes=filter(lambda x:x.id!=self.id, alikes)
+            return alikes
+        else:
+            return []
+    
+    def getToFollow(self,alikes=None):
+        if not alikes:
+            alikes=self.getAlikes()
+        if alikes:
+            alike=alikes[-1]
+            to_follow=[]
+            cpt=0
+            i=0
+            l=alike.getBestFollowing(20)
+            while cpt<len(l) and i<len(l):
+                if l[i] not in self.following and l[i] not in to_follow:
+                    to_follow.append(l[i])
+                    cpt+=1
+                i+=1    
+            return to_follow
+        else:
+            return []
+    
+    def getToRepin(self,nb=10):
+        nb_user=2 
+        to_follow=self.getToFollow()[-10:]
+        if len(to_follow)>nb_user:
+            to_follow=random.sample(to_follow,nb_user)
+            pin_list=[]
+            thread_list=[]
+            lock=Lock()
+            for u in to_follow:
+                print u
+                def task(url,user_id):
+                    pin_page=PinListPage('{0}/pins/?page='.format(url), user_id)
+                    pin_page.fetch(1)
+                    lock.acquire()
+                    pin_list.extend(pin_page.pin_list)
+                    lock.release()
+                t=Thread(target=task,args=(u.url(),u.id,))
+                thread_list.append(t)
+                
+            for t in thread_list:
+                t.start()
+            for t in thread_list:
+                t.join()
+            pin_list.sort(key=lambda pin:-pin.nb_repin)
+            pin_list=pin_list[:(nb*3)]
+
+            return random.sample(pin_list, nb*(nb<len(pin_list)))
+            
     def saveDB(self): # AVOIR
         try:
             u=UserModel.objects.get(user_id=self.id)
@@ -157,54 +247,22 @@ class User:
                                      location=self.location,
                                      photo_url=self.photo_url)
         
-        if self.scoring !=None:
-            d=datetime.datetime.now()
+        d=datetime.datetime.now()
+        if self.nb_repin:
             try:
                 u.userstatmodel_set.get(date__year=d.year, date__month=d.month, date__day=d.day)
             except UserStatModel.DoesNotExist:
                 u.userstatmodel_set.create(date= d,
-                                           nb_board=self.scoring.nb_board,
-                                           nb_pin=self.scoring.nb_pin,
-                                           nb_like=self.scoring.nb_like,
-                                           nb_followers=self.scoring.nb_followers,
-                                           nb_following=self.scoring.nb_following,
-                                           nb_comment=self.scoring.nb_comment,
-                                           nb_repin=self.scoring.nb_repin,
-                                           nb_liked=self.scoring.nb_liked
+                                           nb_board=self.nb_board,
+                                           nb_pin=self.nb_pin,
+                                           nb_like=self.nb_like,
+                                           nb_followers=self.nb_followers,
+                                           nb_following=self.nb_following,
+                                           nb_comment=self.nb_comment,
+                                           nb_repin=self.nb_repin,
+                                           nb_liked=self.nb_liked
                                            )
         return u
-        
-    def fetchFollow(self,follow, limit):
-        follow_list=[]
-
-        url='http://pinterest.com/'+str(self.id)+'/'+follow # follow variable could be 'following or 'followers'
-        marker=0 # Used to http GET each pages
-        page=1 # Used to http GET each pages
-        
-        while marker >=0 and page<=limit:
-            r = http.request('GET', url+'/?page='+str(page)+'&marker='+str(marker))
-            source=r.data
-            html_list=searchPersons(source)  
-                       
-            for person_html in html_list:
-                f_id,f_loc,f_name,f_photo=searchUserInfo(person_html)
-                u=User(f_id,f_loc,f_name,f_photo)
-                u.calcLatLng()
-                follow_list.append(u)
-                
-                                   
-            marker=searchMarker(source) # Next marker (must be parsed on the html page)
-            page+=1 # Next page
-                        
-        return follow_list
-
-    def fetchFollowers(self,limit=5):
-        self.followers=self.fetchFollow('followers',limit)
-        return self.followers
-
-    def fetchFollowing(self,limit=5):
-        self.following=self.fetchFollow('following',limit)
-        return self.following
     
     def calcLatLng(self):
         # Get the user or create a new one.

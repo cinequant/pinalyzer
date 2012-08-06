@@ -17,17 +17,23 @@ urlpatterns = patterns('',
          #pinalyzer
          url(r'^pinalyzer$', 'pinapp.views.index'),
          
-         url(r'^$','map.views.vote'),
+         url(r'^$','map.views.suggestion'),
          url(r'^invite$','map.views.invite'),
          url(r'^score$','map.views.analytics'),
          
          url(r'^ranking$','map.views.ranking'),
          url(r'^savematch$','map.views.savematch'),
-         url(r'^distribution','map.views.distribution'),
-         url(r'^scoring','map.views.get_score'),
+         url(r'^distribution$','map.views.distribution'),
+         url(r'^scoring$','map.views.get_score'),
          url(r'^score_img$','map.views.score_img'),
          url(r'^pin$','map.views.pin'),
-         url(r'^about','map.views.about'),
+         url(r'^about$','map.views.about'),
+         url(r'^pinbattle','map.views.vote'),
+         url(r'^get_pin_suggestion$','map.views.get_pin_suggestion'),
+          url(r'^quizz$','map.views.quizz'),
+           url(r'^savequizzvote$','map.views.savequizzvote'),
+           url(r'^quizzresult$','map.views.quizzresult'),
+         
        #   url(r'^$', 'pinalyzer.pinapp.views.index'),
         
 )

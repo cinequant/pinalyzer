@@ -134,6 +134,42 @@ h2#name{
 	height:43px;
 	font-size: 20px;
 }
+
+
+#nav-analytics{
+	display: table;
+	border-width:0px;
+	padding: 0px 0px 0px 500px;
+	margin-top: 10px;
+}
+
+#nav-analytics>a{
+    display: inline-block;
+    border-top-left-radius:3px;
+    border-top-right-radius:3px;
+    margin: 0px auto;
+    font-size: 20px;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+
+#nav-analytics>a.selected{
+	position:relative;
+	background-color: white;
+	padding-bottom:11px;
+	top:1px;
+    border-style: solid;
+    border-color: rgb(200,200,200);
+    border-width: 1px 1px 0px 1px;
+    font-weight: bold;
+}
+
+#conteneur{
+	border-top: 1px solid rgb(200,200,200);
+	padding: 5px 10px;
+}
+
 #how{
 	margin-top: 30px;
 	display: none;
@@ -162,13 +198,14 @@ h2#name{
 }
 
 #score-history{
-	margin-top:50px;
+	margin-top:20px;
 	width: 700px;
 }
 
 #score-distribution{
 	margin-top: 20px;
 	width: 700px;
+
 }
 
 #activity{
@@ -219,21 +256,36 @@ h2#name{
 
 #score-history h2, #score-distribution h2, #activity h2{
     text-shadow: 0px 3px  rgba(100,100,100,0.3);
-    border-bottom: 1px solid black;
     padding-bottom: 10px;
+    padding-right: 0px;
 }
 
 #activity h2{
-    margin-bottom: 20px;
+    margin-bottom: 8px;
+    margin-top:10px;
 }
 .chart{
 	height: 250px;
 	margin: 20px;
-	border: 1px solid black
+	border: 1px solid black;
 	
 }
 #hist-chart{
 	display: none;
+}
+
+#activity .chart{
+	display:none;
+}
+#activity-history select{
+	display: block;
+	width: 100px;
+	text-align: center;
+	margin: 0px auto;
+}
+
+#analytics-info{
+	height: 1150px;
 }
 
 

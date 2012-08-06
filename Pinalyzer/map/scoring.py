@@ -3,6 +3,7 @@ import urllib3
 import re
 import random
 import string
+from threading import Thread, Lock
 
       
 class NotFound(Exception):
@@ -91,18 +92,27 @@ class Scoring:
         total_pages=min(self.nb_pin/50 + (self.nb_pin%50 !=0),10)
         nb_pages=min(10, total_pages)
         list_page= random.sample(range(1,total_pages+1),nb_pages)
-        
-        self.sampled_pin=0
+        thread_list=[]
+        lock=Lock()
         for page in list_page:
-            r=Scoring.http.request('GET', self.pins_url(page))
-            pin_div_list=Scoring.splitter.split(re.search(Scoring.re_pin_html,r.data).group(0))[1:]
-            for pin_div in pin_div_list:
-                self.sampled_pin+=1
-                self.nb_like+=Scoring.searchLike(pin_div)
-                self.nb_comment+=Scoring.searchComment(pin_div)
-                self.nb_repin+=Scoring.searchRepin(pin_div)
+            self.sampled_pin=0
+            def task(no_page):
+                r=Scoring.http.request('GET', self.pins_url(no_page))
+                pin_div_list=Scoring.splitter.split(re.search(Scoring.re_pin_html,r.data).group(0))[1:]
+                for pin_div in pin_div_list:
+                    lock.acquire()
+                    self.sampled_pin+=1
+                    self.nb_like+=Scoring.searchLike(pin_div)
+                    self.nb_comment+=Scoring.searchComment(pin_div)
+                    self.nb_repin+=Scoring.searchRepin(pin_div)
+                    lock.release()
+            t=Thread(target=task,args=(page,))
+            thread_list.append(t)
+            t.start()
         
-             
+        for t in thread_list:
+            t.join()
+      
         if self.nb_pin !=self.sampled_pin:
             self.nb_like=int(float(self.nb_like)*float(self.nb_pin)/float(self.sampled_pin))
             self.nb_comment=int(float(self.nb_comment)*float(self.nb_pin)/float(self.sampled_pin))

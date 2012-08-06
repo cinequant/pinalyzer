@@ -4,7 +4,7 @@
 <script type="text/javascript">
 
 	
-	var limit=5000; // Waiting time for the next couple
+	var limit=5000; // temps d'attente pour al rpochaien apir de pin
 	var time=limit;
 	var interval; // Interval object
 	var section="battle";
@@ -66,10 +66,7 @@
 						pin_id:result.data[1].pin_id,
 					}).css({width: res.w2, height: res.h2});
 					
-					
-					
-					// display the pins only if they are both loaded
-					
+					// Afficher les pins seuleemnt si ils sont tosu esld eux bien chargés	
 					$(".battle").off();
 					pin_loaded=0;
 					$(".battle").load(function(){
@@ -275,13 +272,13 @@
 	}
 
 	$(document).ready(function() {
-		// Color the page link in the general nav
-		$("#nav-battle").css({
+		// Colorier le lien de pinbattle dans le menu du site
+		$("#mainitem-battle").css({
 			'background-color' : 'rgb(204,34,37)',
 			'color' : 'white'
 		});
 				
-		// in the pin battle app, 
+		// Dans le menu de pinbattle 
 		$("nav#nav-pinbattle a").click(function(event) {
 			event.preventDefault();
 			resetPage();

@@ -4,15 +4,7 @@ margin-right: auto;
 width: 900px;
 }
 
-h1#pinbattle-title{
-	text-align: center;
-	color: rgb(204,34,37);
-	font-family: 'Pacifico', cursive;
-	font-size: 25px;
-	font-weight: normal;
-	margin-top: 20px;
-	postion:fixed;
-}
+
 
 #select{
 	margin: 3px auto;
@@ -75,6 +67,7 @@ td p{
 }
 p#msg{
 	text-align: center;
+	font-size: 24px;
 }
 
 nav#nav-pinbattle{
@@ -173,6 +166,129 @@ td:first-child div{
 #login-ranking p{
 	text-align: center;
 	width: 400px;
-	font-size: 20px
+	font-size: 20px;
 }
 
+#infovote{
+    text-align: center;
+    font-size: 24px;	
+}
+
+#nb-votes{
+	color: rgb(204,34,37);
+}
+
+#loading-div {
+    display: none;
+    margin: 0px auto;
+}
+
+#loading-div img {
+    display: table;
+    margin: 0px auto;
+}
+
+#loading-div p {
+    display: table;
+    margin: 0px auto;
+    font-size: 1.5em;
+}
+
+#loading-div img {
+    margin-top:30px;
+}
+
+
+#quizz-res{
+	display: none;
+	box-shadow: 1px 1px 5px rgba(150,150,150,0.8);
+	background-color: white;
+	padding-bottom: 30px;
+}
+#quizz-res h2{
+	display: table;
+	margin: 0px auto;
+	font-size: 34px;
+	padding:10px 30px;
+	border-bottom: 1px dashed black;
+}
+#quizz-res>p{
+    display: table;
+    margin: 0px auto;
+    font-size: 26px;
+    margin-top: 20px;
+}
+
+#alikes, #to-follow{
+	margin: 10px;
+}
+
+#alikes{
+	margin-right: 25px;
+}
+
+#alikes>div, #to-follow>div{
+	margin:5px;
+	border: 1px solid rgba(150,150,150,0.8);
+	display: inline-block;
+	
+}
+#alikes>p, #to-follow>p{
+	font-size:24px;
+	text-align: center;
+	/*color: rgb(204,34,37);*/
+	font-style: italic;
+}
+.user{
+	background-color:rgb(245,245,245);
+}
+
+.photo{
+	background-color:white;
+	display: block;
+	width: 100px;
+    margin:auto 0px;
+    min-height:100px;
+}
+
+.photo-div{
+    height:100px;
+    width:200px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: top;
+    width: 100px;
+}
+.user-info{
+	display: inline-block;
+	vertical-align: top;
+    width: 300px;
+    overflow: hidden;
+    position: relative;
+}
+
+.user-info a{
+	text-decoration: none;
+	color: rgb(90,90,90);
+
+}
+
+.user-info a:hover{
+     font-weight: bold;
+     text-decation: underline;
+
+}
+.name{
+	font-size: 24px;
+	display: table;
+	margin: 3px auto;
+}
+
+.location{
+	margin-top: 30px;
+	display: table;
+	bottom: 0px;
+	text-align: center;
+	width: 100%;
+	
+}

@@ -1,3 +1,11 @@
+* {
+    margin: 0px;
+    padding: 0px;
+}
+
+p{
+	font-size:24px;
+}
 html {
     overflow-y: scroll;
     margin: 0px 0px;
@@ -32,7 +40,6 @@ header{
     border:1px solid #1a356e;
     font-weight:700;
     font-family:"lucida grande",tahoma,verdana,arial,sans-serif;
-    
      user-select: none;
     -khtml-user-select: none;
     -o-user-select: none;
@@ -45,10 +52,6 @@ header{
 	display: none;
 }
 
-header .login-button,header .logout-button{
-	float: right;
-}
-
 .login-button:active{
 	background:#3B5998;
 }
@@ -58,6 +61,7 @@ header .login-button,header .logout-button{
 	margin: 0px auto;
 	width: 900px;
 	overflow: auto;
+	position:relative;
 }
 
 div#logo{
@@ -134,9 +138,81 @@ nav#main-nav a:hover{
 }
 
 
+.log-menu{
+	position: absolute;
+	top:auto;
+	right:0px;
+	bottom:auto;
+}
+
 /* home.html*/
 
 .lrdiscoverwidget{
 	margin: 20px auto;
 	display: table
+}
+.sectionname{
+	font-weight: normal;
+	color: rgb(204,34,37);
+	font-family: 'Pacifico', cursive;
+	text-decoration: none;
+}
+
+h1.section-title{
+    text-align: center;
+    color: rgb(204,34,37);
+    font-family: 'Pacifico', cursive;
+    font-size: 30px;
+    font-weight: normal;
+    margin-top: 20px;
+    postion:fixed;
+}
+
+.pinalyzer{
+	font-weight: normal;
+	color: rgb(204,34,37);
+    font-family: 'Pacifico', cursive;
+}
+
+/* Element recurent */
+
+.start-box{
+    display: table;
+    margin: 25px auto;
+    padding: 20px;
+    
+    border: 1px solid rgb(150,150,150);
+    border-radius: 5px;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+    
+    background-color: rgba(200,200,200,0.5);
+}
+
+.start-box .form-div {
+    display: table;
+    margin: 0px auto;
+}
+
+.start-box input.textfield {
+    height: 40px;
+    width: 200px;
+    line-height: 40px;
+    font-size: 24px;
+    border-radius: 5px;
+    display: inline-block;
+    vertical-align: middle;
+    margin: 5px;
+}
+
+.start-box input.button {
+    height: 43px;
+    font-size: 20px;
+    cursor:pointer;
+    font-weight: bold;
+}
+
+.start-box .indication {
+    margin: 20px;
+    text-align: center;
+    color: rgb(90, 90, 90);
 }

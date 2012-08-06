@@ -19,7 +19,7 @@
 		}
 		else if (x==0){
 			c='grey'
-			num= '--'
+			num= '+0'
 		}
 		else{
 			c='red'
@@ -153,6 +153,71 @@
 			} ]
 		});
 	}
+	
+	function setChart(param){
+		document[param.varname] = new Highcharts.Chart({
+            chart : {
+                renderTo : param.chart_id,
+                type : 'line'
+            },
+            title : {
+                text : param.title
+            },
+            xAxis : {
+                type : 'datetime',
+                dateTimeLabelFormats : { // don't display the dummy year
+                    month : '%e. %b',
+                    year : '%b'
+                }
+            },
+            yAxis : {
+                minPadding : 0.20,
+                title : {
+                    text : param.y_txt
+                },
+                startOnTick : true,
+            },
+            tooltip : {
+                formatter : function() {
+                    return '' + this.y + ' '+param.y_unite;
+                }
+            },
+            plotOptions : {
+                column : {
+                    pointPadding : 0.2,
+                    borderWidth : 0
+                }
+            },
+            series : [ {
+                name : param.name,
+                data : param.data
+            } ]
+        });
+		
+	}
+	
+	function getLatestStats(all_hist){
+		i=all_hist.like_hist.length-1
+		names=['following','followers','like','board','pin','like','repin','comment']
+		
+		last_stat= new Object();
+		prev_stat= null;
+		for (var j=0; j<names.length;j++){
+			last_stat['nb_'+names[j]]=all_hist[names[j]+'_hist'][i][1]
+	        
+		}
+	    last_stat.score=all_hist.score_hist[i][1]
+	    
+	    if(i>0){
+	    	prev_stat= new Object();
+	    	for (var j=0; j<names.length;j++){
+	    		prev_stat['nb_'+names[j]]=all_hist[names[j]+'_hist'][i-1][1]
+	    	}
+	    	prev_stat.score=all_hist.score_hist[i-1][1]
+	    }
+	    
+		return [last_stat, prev_stat]
+	}
 
 	function setUserInfo(user_id) {
 		$("#analytics-info").hide();
@@ -174,55 +239,107 @@
 						src : res.data.user.photo_url
 					});
 					$("#name").html(res.data.user.name);
-					$("#scorediv>#score-name").html(res.data.user.name + "'s score :")
+					$("#scorediv>#score-name").html(res.data.user.name + "'s score :");
+					last_stat=null;
+					prev_stat=null;
+					stats=getLatestStats(res.data.all_hist);
+					last_stat=stats[0]
+					prev_stat=stats[1]
 					$("#location").html(res.data.user.location);
-					$("#boards").html(res.data.stat.nb_board);
-					$("#pins").html(res.data.stat.nb_pin);
-					$("#liked").html(res.data.stat.nb_liked);
-					$("#followers").html(res.data.stat.nb_followers);
-					$("#following").html(res.data.stat.nb_following);
+					$("#boards").html(last_stat.nb_board);
+					$("#pins").html(last_stat.nb_pin);
+					$("#like").html(last_stat.nb_like);
+					$("#followers").html(last_stat.nb_followers);
+					$("#following").html(last_stat.nb_following);
 
-					if (res.data.prev_stat) {
-						score_incr = (res.data.score - res.data.prev_score).toFixed(1)
-						boards_incr = res.data.stat.nb_board - res.data.prev_stat.nb_board
-						pins_incr = res.data.stat.nb_pin - res.data.prev_stat.nb_pin
-						liked_incr = res.data.stat.nb_liked - res.data.prev_stat.nb_liked
-						followers_incr = res.data.stat.nb_followers - res.data.prev_stat.nb_followers
-						following_incr = res.data.stat.nb_following - res.data.prev_stat.nb_following
+					if (prev_stat) {
+						score_incr = (last_stat.score - prev_stat.score).toFixed(1)
+						boards_incr = last_stat.nb_board - prev_stat.nb_board
+						pins_incr = last_stat.nb_pin - prev_stat.nb_pin
+						like_incr = last_stat.nb_like - prev_stat.nb_like
+						followers_incr = last_stat.nb_followers - prev_stat.nb_followers
+						following_incr = last_stat.nb_following - prev_stat.nb_following
 					}
 					else{
-						score_incr = res.data.score.toFixed(1);
-                        boards_incr = res.data.stat.nb_board
-                        pins_incr = res.data.stat.nb_pin
-                        liked_incr = res.data.stat.nb_liked
-                        followers_incr = res.data.stat.nb_followers
-                        following_incr = res.data.stat.nb_following
+						score_incr = last_stat.score.toFixed(1);
+                        boards_incr =last_stat.nb_board
+                        pins_incr = last_stat.nb_pin
+                        like_incr = last_stat.nb_like
+                        followers_incr = last_stat.nb_followers
+                        following_incr = last_stat.nb_following
                     }
 					
 					setNum(boards_incr,"#boards-incr");
 					setNum(pins_incr,"#pins-incr");
-					setNum(liked_incr,"#liked-incr");
+					setNum(like_incr,"#like-incr");
 					setNum(followers_incr,"#followers-incr");
 					setNum(following_incr,"#following-incr");
+					//alert('Ok');
+					setChart({
+						'chart_id':'followers-chart',
+						'title':res.data.user.name+"'s followers",
+						'data':res.data.all_hist.followers_hist,
+						'y_txt':'Followers',
+						'y_unite': 'followers',
+						'name': res.data.user.name,
+					});
+					setChart({
+                        'chart_id':'following-chart',
+                        'title':res.data.user.name+"'s following",
+                        'data':res.data.all_hist.following_hist,
+                        'y_txt':'Following',
+                        'y_unite': 'following',
+                        'name': res.data.user.name,
+                    });
+					setChart({
+                        'chart_id':'pin-chart',
+                        'title':res.data.user.name+"'s pins",
+                        'data':res.data.all_hist.pin_hist,
+                        'y_txt':'Pins',
+                        'y_unite': 'pins',
+                        'name': res.data.user.name,
+                    });
+					setChart({
+                        'chart_id':'board-chart',
+                        'title':res.data.user.name+"'s boardss",
+                        'data':res.data.all_hist.board_hist,
+                        'y_txt':'Boards',
+                        'y_unite': 'board',
+                        'name': res.data.user.name,
+                    });
+					setChart({
+                        'chart_id':'like-chart',
+                        'title':res.data.user.name+"'s likes",
+                        'data':res.data.all_hist.like_hist,
+                        'y_txt':'Likes',
+                        'y_unite': 'like',
+                        'name': res.data.user.name,
+                    });
+		
+					
+					
+					chart_id=$('#activity select').attr('value');
+				    $("#activity #"+chart_id).show();
 					
 					// if the user is logged
 					if(fb_id){
 						setNum(score_incr,"#score-incr");
-						$("#score").html(res.data.score.toFixed(1));
-						setHistStock(res.data.history, res.data.user.name);
+						$("#score").html(last_stat.score.toFixed(1));
+						setHistStock(res.data.all_hist.score_hist, res.data.user.name);
 						if (rep_chart == null) {
                             setRepartitionChart()
                         }
+						/*
 						$("#score-history").show();
                         $("#score-distribution").show();
-                        $('#how').show();
+                        $('#how').show();*/
 					}
 					else{
 						setNum(0,"#score-incr");
                         $("#score").html('??');
-                        $("#score-history").hide();
+                        /*$("#score-history").hide();
                         $("#score-distribution").hide();
-                        $('#how').hide();
+                        $('#how').hide();*/
 					}
 					$('#analytics-info').show();
 
@@ -237,7 +354,7 @@
 	}
 
 	$(document).ready(function() {
-		$("#nav-score").css({
+		$("#mainitem-score").css({
 			'background-color' : 'rgb(204,34,37)',
 			'color' : 'white'
 		});
@@ -245,12 +362,15 @@
 		// display the score if an user_id is specified in the url
 		user = getURIParam(window.location)['user'];
 		if (user) {
-			user_id=user
-			setUserInfo(user_id);
+			user_id=user;
+			if(fb_id==false){
+			    setUserInfo(user_id);
+			}
 		}
 		$('form').submit(function(event) {
 			event.preventDefault();
 		});
+		
 
 		$('#button').submit(function(event) {
 			event.preventDefault();
@@ -261,9 +381,29 @@
 			user_id = $("#textfield").val();
 			setUserInfo(user_id);
 		});
+		
+		
+		$('#nav-analytics a').click(function(event){
+			event.preventDefault();
+			$('#conteneur>*').hide();
+			$('#nav-analytics a').removeClass('selected');
+			$(this).addClass('selected');
+			selector='.'+this.id.split('-')[1];
+			if(selector !='.score'|| fb_id){
+				$(selector).show();
+			}
+
+		});
 
 		$('#how h2').click(function() {
 			$(this).next().slideToggle();
+		});
+		
+		$("#activity select").change(function(){
+			$("#activity .chart").hide();
+			chart_id=$(this).attr('value');
+			$("#activity #"+chart_id).show();
+			
 		});
 
 	});
@@ -289,11 +429,11 @@ FB.Event.subscribe('auth.statusChange',function(response){
 {% endblock %}
 
 {% block content %}
-<h2 id="score-title">Enter your Pinterest id and get your score.</h2>
+<h2 id="score-title">Enter your pinterest id, and see your account analytics</h2>
 <div id="input">
 	<form>
 		<input id="textfield" type="text" name="user_id" /> 
-		<input id="button" type="submit" value="Get your score" />
+		<input id="button" type="submit" value=" See " />
 	</form>{% csrf_token %}
 
 </div>
@@ -311,8 +451,7 @@ FB.Event.subscribe('auth.statusChange',function(response){
 	<div id="main-info">
 
 		<div id="perso">
-			<img id="photo"
-				src="http://media-cache-ec7.pinterest.com/upload/25543922857168989_WvVJfZ5c_b.jpg" />
+			<img id="photo" src="http://media-cache-ec7.pinterest.com/upload/25543922857168989_WvVJfZ5c_b.jpg" />
 			<div id="nameloc">
 				<h2 id="name">Toto</h2>
 				<span id="location">Paris</span>
@@ -336,7 +475,7 @@ FB.Event.subscribe('auth.statusChange',function(response){
 				</tr>
 
 				<tr>
-					<td id="liked">30</td>
+					<td id="like">30</td>
 					<td>Likes</td>
 				</tr>
 
@@ -359,53 +498,76 @@ FB.Event.subscribe('auth.statusChange',function(response){
 			<p id="score">??</p>
 		</div>
 		<div class="login-info init">
-		  <p> Want to see your score ?</p>
-		  <div class="login-button " id="login-button-score">Login with facebook</div>
+			<p>Want to see your score ?</p>
+			<div class="login-button " id="login-button-score">Login with facebook</div>
 		</div>
 	</div>
 
-	<div id="activity">
-		<h2>Since yesterday...</h2>
-        
-        <h3> Influence</h3>
-		<div class="activity-div">
-			<span id="score-incr">--</span><span>Score</span>
+	<nav id="nav-analytics">
+		<a class="selected" id="item-activity">Activity</a> <a id="item-score">Score</a> <a id="item-pins">Pins</a>
+	</nav>
+
+	<div id="conteneur">
+
+		<div id="activity" class="activity">
+			<h2>Since yesterday...</h2>
+
+			<h3>Influence</h3>
+			<div class="activity-div">
+				<span id="score-incr">--</span><span>Score</span>
+			</div>
+
+			<div class="activity-div">
+				<span id="followers-incr">--</span><span>Followers</span>
+			</div>
+
+			<div class="activity-div">
+				<span id="pins-incr">--</span><span>Pins</span>
+			</div>
+
+			<div class="activity-div">
+				<span id="boards-incr">--</span><span>Boards</span>
+			</div>
+
+			<h3>Activity</h3>
+			<div class="activity-div">
+				<span id="following-incr">--</span><span>Following</span>
+			</div>
+
+			<div class="activity-div">
+				<span id="like-incr">--</span><span>Likes</span>
+			</div>
+			
+            <div id="activity-history">
+                <h2>History</h2>
+				<select>
+				    <option value="followers-chart">Followers</option> 
+					<option value="pin-chart">Pins</option>
+					<option value="board-chart">Boards</option> 
+					<option value="like-chart">Likes</option> 	
+					<option value="following-chart">Following</option>		
+				</select>
+				<div class="chart" id="followers-chart"></div>
+				<div class="chart" id="pin-chart"></div>
+                <div class="chart" id="board-chart"></div>
+                <div class="chart" id="like-chart"></div>
+                <div class="chart" id="following-chart"></div>
+			</div>
+
+
 		</div>
 
-		<div class="activity-div">
-			<span id="followers-incr">--</span><span>Followers</span>
+		<div id="score-history" class="score" >
+			<h2>Score History</h2>
+			<div class="chart" id="hist-stock"></div>
+			<div class="chart" id="hist-chart"></div>
 		</div>
 
-		<div class="activity-div">
-			<span id="pins-incr">--</span><span>Pins</span>
+		<div id="score-distribution" class="score" >
+			<h2>Score distribution for all users</h2>
+			<div class="chart" id="rep-chart"></div>
 		</div>
 
-		<div class="activity-div">
-			<span id="boards-incr">--</span><span>Boards</span>
-		</div>
-        
-        <h3>Activity</h3>
-		<div class="activity-div">
-			<span id="following-incr">--</span><span>Following</span>
-		</div>
-
-		<div class="activity-div">
-			<span id="liked-incr">--</span><span>Likes</span>
-		</div>
-
-
-	</div>
-
-	<div id="score-history">
-	   <h2>Score History</h2>
-	   <div class="chart" id="hist-stock"></div>
-       <div class="chart" id="hist-chart"></div>
-	   
-	</div>
-	
-	<div id="score-distribution">
-	   <h2>Score distribution for all users</h2>
-	   <div class="chart" id="rep-chart"></div>
 	</div>
 
 </div>
