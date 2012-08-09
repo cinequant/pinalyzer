@@ -15,16 +15,17 @@
 <head>
 {% endif %}
 
+
+
 <meta charset="UTF-8">
 <meta name="robots" content="all">
 <meta name="description" content="Pinalyzer, a Pinterest analytics tool. Your best friend to fully enjoy Pinterest.">
 <meta name="keywords" content="pinterest, analytics, marketing, pinterest tool, tool, influence">
 <title>{% block title %}Pinalyzer, Pinterest analytics tool {% endblock %}</title>
 
-<!--
-    <script type="text/javascript">var switchTo5x=true;</script>
-    <script type="text/javascript" src="http://w.sharethis.com/button/buttons.js"></script>
-    <script type="text/javascript" src="http://s.sharethis.com/loader.js"></script>-->
+<link rel="image_src" 
+      type="image/png" 
+      href="http://www.pinalyzer.com/static/img/pinterest.png" />
 <link rel="stylesheet" type="text/css" href="/static/css/style_base.css" />
 <link href='http://fonts.googleapis.com/css?family=Belleza' rel='stylesheet' type='text/css'>
 <link href='http://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
@@ -33,6 +34,10 @@
 <script src="/static/js/jquery-1.7.2.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.min.js"></script>
 {% block header %} {% endblock %}
+<script type="text/javascript">var switchTo5x=false;</script>
+<script type="text/javascript" src="http://w.sharethis.com/button/buttons.js"></script>
+<script type="text/javascript">stLight.options({publisher: "164e77e8-ef7f-40b9-a0d5-40831d0aa54a"}); </script>
+
 </head>
 
 {% block below_header %} {% endblock %}
@@ -50,14 +55,7 @@
   })();
 </script>
 
-<!--Share script 
-<script>
-    var options={ "publisher": "47dcf93c-33d5-4e59-bb7d-8e759e5088b6", "position": "right", "ad": { "visible": false, "openDelay": 5, "closeDelay": 0}, "chicklets": { "items": ["facebook", "twitter", "email", "sharethis"]}};
-    var st_hover_widget = new sharethis.widgets.hoverbuttons(options);
-</script>
--->
-
-<!-- General use function -->
+<!-- fonction generale -->
 <script>
 function getURIParam(url){
 	var vars = [], hash;
@@ -113,6 +111,7 @@ $(document).ajaxSend(function(event, xhr, settings) {
 
 <body>
 
+
 	<div id="fb-root"></div>
 	<script>
 	   var fb_id=null;
@@ -141,10 +140,10 @@ $(document).ajaxSend(function(event, xhr, settings) {
 				xfbml : true
 			// parse XFBML
 			});
-			facebook=FB;
-			/* Callback used at each FB status change */
+			
 		       var cb_login=function(response){
 		           if (response.authResponse) {
+		        	   console.log(response);
 		               $(".logout-button").css('display','table');
 		               $(".logout-info").css('display','block');
 		               $(".login-button, .login-info").css('display','none');
@@ -158,10 +157,10 @@ $(document).ajaxSend(function(event, xhr, settings) {
 		               $(".login-button").css('display','table');
 		               $(".login-info").css('display','block');
 		               $(".logout-button, .logout-info").css('display','none');
+		               window.location.reload();
 		           }
 		       }
 
-		       /* Callback used the first time the user FB status is checked at the load of the page*/
 		       var cb_login_init=function (response){
 		           if (response.authResponse) {
 		               $(".logout-button").css('display','table');
@@ -188,7 +187,6 @@ $(document).ajaxSend(function(event, xhr, settings) {
 				FB.logout();
 			});
 			
-			// Post an user action with open graph (FB)
 			function postOpenGraph(fb_id, action, obj, obj_url){
 				if(obj=="pin"){
 					FB.api('/'+fb_id+'/{{fb_info.app_namespace}}:'+action,'post',{ pin: obj_url, scrape:'true' },function(response){
@@ -224,6 +222,17 @@ $(document).ajaxSend(function(event, xhr, settings) {
 			{% endblock %}
 		}	
 	</script>
+	
+<img src="/static/img/pinterest.png" style="display:block;position:absolute;left:-10000px;">
+
+<div id="sharebuttons">
+<span class='st_pinterest_large' st_image='http://www.pinalyzer.com/static/img/pinterest.png' 'displayText='Pinterest'></span>
+<span class='st_facebook_large' st_image='http://www.pinalyzer.com/static/img/pinterest.png'  displayText='Facebook'></span>
+<span class='st_twitter_large' st_image='http://www.pinalyzer.com/static/img/pinterest.png' displayText='Tweet'></span>
+<span class='st_googleplus_large' st_image='http://www.pinalyzer.com/static/img/pinterest.png' displayText='Google +'></span>
+<span class='st_sharethis_large' st_image='http://www.pinalyzer.com/static/img/pinterest.png' displayText='ShareThis'></span>
+<span class='st_email_large' st_image='http://www.pinalyzer.com/static/img/pinterest.png' st_title="Pinalyzer" displayText='Email'></span>
+</div>
 
 	{% block start %}{% endblock %}
 
@@ -234,18 +243,29 @@ $(document).ajaxSend(function(event, xhr, settings) {
 				<h1 id="title">Pinalyzer</h1>
 				<p id=title-text>Your best friend to enjoy pinterest</p>
 			</div>
-            <div class="login-button init log-menu">Login with facebook</div>
-            <div class="logout-button init log-menu">Logout</div>
 			<nav id="main-nav">
-				<a id="mainitem-battle" href="/">Pin Battle</a> <a id="mainitem-score" href="/score">Analytics</a> <a id="mainitem-invite" href="/invite">Invite</a> <!-- <a id="mainitem-about" href="/about">About</a> -->
+				<a id="mainitem-battle" href="/">Smart Suggest</a>
+				<a id="mainitem-battle" href="/quizz">Pin Quizz</a>
+				<a id="mainitem-analytics" href="/analytics">Analytics</a>
+				<a id="mainitem-score" href="score">Influence scoring</a>
+				<a id="mainitem-about" href="/about">About</a>
+				
 			</nav>
+			<div id="log-div">
+			<div class="login-button init log-menu">Login with facebook</div>
+			 <div class="logout-button init log-menu">Logout</div>
+           
+            </div>
 			
 
 		</div>
+		
 
 	</header>
 	<div id=content>{% block content %}{% endblock %}</div>
 
+
 </body>
 </html>
 {% endautoescape %}
+

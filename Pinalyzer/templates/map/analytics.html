@@ -15,19 +15,19 @@
 	function setNum(x, selector){
 		if (x>0){
 			c='green';
-			num= '+'+x
+			num= '+'+x;
 		}
 		else if (x==0){
-			c='grey'
-			num= '+0'
+			c='grey';
+			num= '+0';
 		}
 		else{
-			c='red'
-			num= x
+			c='red';
+			num= x;
 		}
 		$(selector).html(num).css('color',c);
 	}
-
+    /*
 	function setRepartitionChart() {
 		$.ajax({
 			type : 'GET',
@@ -111,6 +111,7 @@
 			} ]
 		});
 	}
+	
 
 	function setHistChart(data, name) {
 
@@ -153,19 +154,20 @@
 			} ]
 		});
 	}
+	*/
 	
 	function setChart(param){
 		document[param.varname] = new Highcharts.Chart({
             chart : {
                 renderTo : param.chart_id,
-                type : 'line'
+                type : 'line',
             },
             title : {
                 text : param.title
             },
             xAxis : {
                 type : 'datetime',
-                dateTimeLabelFormats : { // don't display the dummy year
+                dateTimeLabelFormats : { 
                     month : '%e. %b',
                     year : '%b'
                 }
@@ -239,7 +241,7 @@
 						src : res.data.user.photo_url
 					});
 					$("#name").html(res.data.user.name);
-					$("#scorediv>#score-name").html(res.data.user.name + "'s score :");
+					//$("#scorediv>#score-name").html(res.data.user.name + "'s score :"); 
 					last_stat=null;
 					prev_stat=null;
 					stats=getLatestStats(res.data.all_hist);
@@ -274,7 +276,7 @@
 					setNum(like_incr,"#like-incr");
 					setNum(followers_incr,"#followers-incr");
 					setNum(following_incr,"#following-incr");
-					//alert('Ok');
+					//alert('Ok'); 
 					setChart({
 						'chart_id':'followers-chart',
 						'title':res.data.user.name+"'s followers",
@@ -315,8 +317,6 @@
                         'y_unite': 'like',
                         'name': res.data.user.name,
                     });
-		
-					
 					
 					chart_id=$('#activity select').attr('value');
 				    $("#activity #"+chart_id).show();
@@ -324,22 +324,17 @@
 					// if the user is logged
 					if(fb_id){
 						setNum(score_incr,"#score-incr");
+						/*
 						$("#score").html(last_stat.score.toFixed(1));
 						setHistStock(res.data.all_hist.score_hist, res.data.user.name);
 						if (rep_chart == null) {
-                            setRepartitionChart()
+                            setRepartitionChart();
                         }
-						/*
-						$("#score-history").show();
-                        $("#score-distribution").show();
-                        $('#how').show();*/
+						*/
 					}
 					else{
-						setNum(0,"#score-incr");
-                        $("#score").html('??');
-                        /*$("#score-history").hide();
-                        $("#score-distribution").hide();
-                        $('#how').hide();*/
+						$("#score-incr").html('--');
+                        //$("#score").html('??'); 
 					}
 					$('#analytics-info').show();
 
@@ -354,18 +349,15 @@
 	}
 
 	$(document).ready(function() {
-		$("#mainitem-score").css({
-			'background-color' : 'rgb(204,34,37)',
-			'color' : 'white'
+		$("#mainitem-analytics").css({
+			'color' : 'rgb(204,34,37)',
 		});
 
 		// display the score if an user_id is specified in the url
 		user = getURIParam(window.location)['user'];
 		if (user) {
 			user_id=user;
-			if(fb_id==false){
-			    setUserInfo(user_id);
-			}
+			setUserInfo(user_id);
 		}
 		$('form').submit(function(event) {
 			event.preventDefault();
@@ -382,7 +374,7 @@
 			setUserInfo(user_id);
 		});
 		
-		
+		/*
 		$('#nav-analytics a').click(function(event){
 			event.preventDefault();
 			$('#conteneur>*').hide();
@@ -398,6 +390,7 @@
 		$('#how h2').click(function() {
 			$(this).next().slideToggle();
 		});
+		*/
 		
 		$("#activity select").change(function(){
 			$("#activity .chart").hide();
@@ -429,19 +422,17 @@ FB.Event.subscribe('auth.statusChange',function(response){
 {% endblock %}
 
 {% block content %}
-<h2 id="score-title">Enter your pinterest id, and see your account analytics</h2>
+<h2 id="score-title">Enter your pinterest name, and see your account analytics</h2>
 <div id="input">
 	<form>
 		<input id="textfield" type="text" name="user_id" /> 
 		<input id="button" type="submit" value=" See " />
 	</form>{% csrf_token %}
-
 </div>
 
 <p id="err"></p>
 
 <div id="loading-div">
-
 	<img src="/static/img/ajax-loader.gif" />
 	<p>Please wait, we're computing the score</p>
 </div>
@@ -451,7 +442,7 @@ FB.Event.subscribe('auth.statusChange',function(response){
 	<div id="main-info">
 
 		<div id="perso">
-			<img id="photo" src="http://media-cache-ec7.pinterest.com/upload/25543922857168989_WvVJfZ5c_b.jpg" />
+			<img id="photo" />
 			<div id="nameloc">
 				<h2 id="name">Toto</h2>
 				<span id="location">Paris</span>
@@ -460,9 +451,6 @@ FB.Event.subscribe('auth.statusChange',function(response){
 		</div>
 
 		<div id="info">
-
-
-
 			<table>
 				<tr>
 					<td id="boards">8</td>
@@ -491,7 +479,7 @@ FB.Event.subscribe('auth.statusChange',function(response){
 			</table>
 		</div>
 	</div>
-
+    <!--  
 	<div id="scorediv">
 		<p id=score-name>Your Pinalyzer score :</p>
 		<div>
@@ -501,16 +489,18 @@ FB.Event.subscribe('auth.statusChange',function(response){
 			<p>Want to see your score ?</p>
 			<div class="login-button " id="login-button-score">Login with facebook</div>
 		</div>
-	</div>
-
+	</div>$
+	-->
+    <!-- 
 	<nav id="nav-analytics">
 		<a class="selected" id="item-activity">Activity</a> <a id="item-score">Score</a> <a id="item-pins">Pins</a>
 	</nav>
+	 -->
 
 	<div id="conteneur">
 
 		<div id="activity" class="activity">
-			<h2>Since yesterday...</h2>
+			<h2>Since the last time ...</h2>
 
 			<h3>Influence</h3>
 			<div class="activity-div">
@@ -556,7 +546,7 @@ FB.Event.subscribe('auth.statusChange',function(response){
 
 
 		</div>
-
+        <!-- 
 		<div id="score-history" class="score" >
 			<h2>Score History</h2>
 			<div class="chart" id="hist-stock"></div>
@@ -567,6 +557,7 @@ FB.Event.subscribe('auth.statusChange',function(response){
 			<h2>Score distribution for all users</h2>
 			<div class="chart" id="rep-chart"></div>
 		</div>
+		 -->
 
 	</div>
 
@@ -575,7 +566,7 @@ FB.Event.subscribe('auth.statusChange',function(response){
 
 
 
-
+<!-- 
 <div id="how">
 	<div>
 		<h2>What does the score mean ?</h2>
@@ -590,7 +581,6 @@ FB.Event.subscribe('auth.statusChange',function(response){
 			people like, repin and comment your pins.</p>
 	</div>
 </div>
-
-<footer></footer>
+ -->
 
 {% endblock %}

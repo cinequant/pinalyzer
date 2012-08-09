@@ -7,16 +7,16 @@ from django.utils.simplejson import dumps
 from django.db.models import Count,Q
 from models import PinModel, CategoryModel, UserModel, UserStatModel, SocialUserModel, QuizzVoteModel, MatchModel
 
-import random, datetime, calendar,  os, time
+import random, datetime, calendar,  os, time, re
 from threading import Thread, Lock
 from user import User
 from pin import Pin
 from category import Category
-import scoring, fun, user
+import  fun, user,userheader
 from django_json import MyEncoder
 from userheader import  NotFound
 
-FB_INFO = {'app_id':'198393166955666', 'app_namespace':'pinalyzertest', }
+FB_INFO = {'app_id':'259025140873474', 'app_namespace':'pinalyzer', }
 
 def index(request):
 	try:
@@ -223,6 +223,12 @@ def analytics(request):
 		user_id = request.GET['user']
 		user = UserModel.objects.get(user_id=user_id)
 		d=datetime.datetime.now()
+		latest_stat=user.latest_stat()
+		if not latest_stat:
+			u=User(user_id)
+			u.fetchScoring()
+			u.saveDB()
+		print user.get_stat_history()
 		FB_INFO['meta'] = {'type':'person',
 						'title': user.name,
 						'image':'http://'+request.get_host()+'/score_img?user_id='+user_id+'&date='+str(d.day)+'_'+str(d.month)+'_'+str(d.year),
@@ -232,6 +238,26 @@ def analytics(request):
 	except (KeyError, UserModel.DoesNotExist):
 		pass
 	return render(request, 'map/analytics.html', {'fb_info':FB_INFO})
+
+def score_page(request):
+	try:
+		user_id = request.GET['user']
+		user = UserModel.objects.get(user_id=user_id)
+		d=datetime.datetime.now()
+		if not user.latest_stat():
+			u=User(user_id)
+			u.fetchScoring()
+			u.saveDB()
+		print user.get_stat_history()
+		FB_INFO['meta'] = {'type':'person',
+						'title': user.name,
+						'image':'http://'+request.get_host()+'/score_img?user_id='+user_id+'&date='+str(d.day)+'_'+str(d.month)+'_'+str(d.year),
+						'description': user.name + '\'s pinterest score is '+str(round(user.latest_stat().score(),1))+' on pinalyzer.com',
+						'url':request.build_absolute_uri(),
+						}
+	except (KeyError, UserModel.DoesNotExist):
+		pass
+	return render(request, 'map/score.html', {'fb_info':FB_INFO})
 	
 def get_score(request):
 	if request.is_ajax() and request.method == 'POST':
@@ -240,6 +266,9 @@ def get_score(request):
 			
 		except KeyError:
 			return HttpResponse(dumps({'status':'ERR', 'data':'No user_id in post param'}, cls=MyEncoder), mimetype='application/json')
+		
+		if re.search('[^a-zA-Z0-9]',user_id):
+			return HttpResponse(dumps({'status':'ERR', 'data':'Wrong name, nobody have this name on pinterest'}, cls=MyEncoder), mimetype='application/json')
 		
 		try:
 			user = UserModel.objects.get(user_id=user_id)
@@ -251,8 +280,8 @@ def get_score(request):
 				u.fetchUser()
 				u.fetchScoring()
 				user = u.saveDB()
-			except scoring.NotFound:
-				return HttpResponse(dumps({'status':'ERR', 'data':'Wrong id, nobody have this id on pinterest'}, cls=MyEncoder), mimetype='application/json')
+			except NotFound:
+				return HttpResponse(dumps({'status':'ERR', 'data':'Wrong name, nobody have this name on pinterest'}, cls=MyEncoder), mimetype='application/json')
 
 		info_open_graph = []
 		try:
@@ -348,22 +377,24 @@ def suggestion(request):
 		except KeyError:
 			return HttpResponse(dumps({'status':'ERR', 'data':'No user id'}, cls=MyEncoder), mimetype='application/json')
 		
+		
 		u=User(user_id)
 		
 		try:
+			if re.search('[^a-zA-Z0-9]',user_id):
+				raise NotFound
 			pin_list=u.getToRepin(10)
-			try:
-				UserModel.objects.get(user_id=user_id)
-			except UserModel.DoesNotExist:
-				u.saveDB()
+			u.saveDB()
 		except NotFound:
 			return HttpResponse(dumps({'status':'ERR', 'data':'Wrong name, nobody have this name on pinterest'}, cls=MyEncoder), mimetype='application/json')
 		
 		if not pin_list:
+			print 'not_pinlist'
 			pin_list=[Pin.modelToPin(p) for p in random.sample(PinModel.objects.all(),10)]
 		res = {'status':'OK', 'data':{'pin_list':pin_list,'user':u}, }
 		return HttpResponse(dumps(res, cls=MyEncoder), mimetype='application/json')
 	else:
+		FB_INFO['meta']=None
 		return render_to_response('map/suggestion.html', {'fb_info':FB_INFO,})
 	
 def quizz(request):	
@@ -391,7 +422,7 @@ def quizz(request):
 		try:
 			user_id = request.GET['user_id']
 		except KeyError:
-			raise Http404
+			return render_to_response('map/quizzform.html', {'fb_info':FB_INFO})
 		return render_to_response('map/quizz.html', {'fb_info':FB_INFO,'user_id':user_id})
 
 def savequizzvote(request):
@@ -422,14 +453,13 @@ def quizzresult(request):
 		participant =  UserModel.objects.annotate(vote_count=Count('quizzvotemodel')).filter(Q(vote_count__gte=1) & ~Q(user_id=user_id))
 		u = User(user_id)
 		other = []
-		if len(participant) > 0:
+		if len(participant) > 5:
 			u_pins = [v.voted_pin.pin_id for v in user.quizzvotemodel_set.all()]
 			for x in participant:
 				x_pins = [v.voted_pin.pin_id for v in x.quizzvotemodel_set.all()]
 				print x
 				other.append([x, len(set(u_pins) & set(x_pins))])
 			other.sort(key=lambda x:x[1])
-			print other
 			other=other[-2:]
 			alikes = [User.modelToUser(x[0]) for x in other]
 			u.fetchFollowing(1)
@@ -454,4 +484,21 @@ def quizzresult(request):
 		
 		res = {'status':'OK', 'data':{'participant': other, 'alikes':alikes,'to_follow':to_follow}}
 		return HttpResponse(dumps(res, cls=MyEncoder), mimetype='application/json')
+def testuser(request):
+	try:
+		user_id=request.GET['user_id']
+	except KeyError:
+		res = {'status':'err', 'data':'user_id non fourni'}
+		return HttpResponse(dumps(res, cls=MyEncoder), mimetype='application/json')
+		
+	try:
+		if re.search('[^a-zA-Z0-9]',user_id):
+			raise NotFound
+		u=User(user_id)
+		u. fetchUser()
+	except NotFound:
+		res = {'status':'OK', 'data':{'user_id_valid':False}}
+		return HttpResponse(dumps(res, cls=MyEncoder), mimetype='application/json')
+	res = {'status':'OK', 'data':{'user_id_valid':True}}
+	return HttpResponse(dumps(res, cls=MyEncoder), mimetype='application/json')
 			

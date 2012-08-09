@@ -27,7 +27,7 @@ def addressToLatLng(address):
     return (output['results'][0]['geometry']['location']['lat'],output['results'][0]['geometry']['location']['lng'])
 
 
-class User:
+class User(object):
     
     @staticmethod
     def getUserIdList(nb_page=10):
@@ -248,7 +248,7 @@ class User:
                                      photo_url=self.photo_url)
         
         d=datetime.datetime.now()
-        if self.nb_repin:
+        if self.nb_repin !=None:
             try:
                 u.userstatmodel_set.get(date__year=d.year, date__month=d.month, date__day=d.day)
             except UserStatModel.DoesNotExist:
