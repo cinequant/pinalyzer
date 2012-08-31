@@ -267,7 +267,7 @@ def get_score(request):
 		except KeyError:
 			return HttpResponse(dumps({'status':'ERR', 'data':'No user_id in post param'}, cls=MyEncoder), mimetype='application/json')
 		
-		if re.search('[^a-zA-Z0-9]',user_id):
+		if re.search('[^a-zA-Z0-9_]',user_id):
 			return HttpResponse(dumps({'status':'ERR', 'data':'Wrong name, nobody have this name on pinterest'}, cls=MyEncoder), mimetype='application/json')
 		
 		try:
@@ -381,7 +381,7 @@ def suggestion(request):
 		u=User(user_id)
 		
 		try:
-			if re.search('[^a-zA-Z0-9]',user_id):
+			if re.search('[^a-zA-Z0-9_]',user_id):
 				raise NotFound
 			pin_list=u.getToRepin(10)
 			u.saveDB()
@@ -492,7 +492,7 @@ def testuser(request):
 		return HttpResponse(dumps(res, cls=MyEncoder), mimetype='application/json')
 		
 	try:
-		if re.search('[^a-zA-Z0-9]',user_id):
+		if re.search('[^a-zA-Z0-9_]',user_id):
 			raise NotFound
 		u=User(user_id)
 		u. fetchUser()

@@ -2,6 +2,7 @@
 import cStringIO
 import Image
 import urllib3
+
 class Pin(object):
     http = urllib3.PoolManager()
     

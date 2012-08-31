@@ -3,7 +3,7 @@ from django.db import  IntegrityError
 from django.utils.simplejson import loads, dumps
 from models import UserModel, LocationModel, UserStatModel
 from userheader import UserHeader
-from pinlistpage import PinListPage, NoPinsError
+from pinlistpage import PinListPage
 
 import urllib3
 import re
@@ -16,6 +16,10 @@ http = urllib3.PoolManager()
 
 # Calculate from an adress, the corresponding geographic coordinates ( a (lat,lng) couple ), using geocoding service ( google map api).
 def addressToLatLng(address):
+    """
+    @param address: 'address' selon googlemap (ce qui peut être une addresse, une ville un pays)
+    @return (latitude,longitude)
+    """
     adr=string.replace(address, ' ', '+') 
     r=http.request('GET','https://maps.googleapis.com/maps/api/geocode/json?address='+adr+'&sensor=false')
     json_output=r.data
@@ -28,9 +32,16 @@ def addressToLatLng(address):
 
 
 class User(object):
+    """
+    Classe pour stocker les informations sur un utilisateur de Pinterest sans les mettre en bdd
+    """
     
     @staticmethod
     def getUserIdList(nb_page=10):
+        """
+        Rechecher des utilisateurs dans popular
+        @return: Liste d'user id (pinterest name)
+        """
         res=[]
         for p in range(1,nb_page+1):
             r=http.request('GET','http://pinterest.com/popular/?lazy=1&page='+str(p))
@@ -40,6 +51,9 @@ class User(object):
     
     @staticmethod
     def fetchPopularUsers(nb_page=10):
+        """
+        Ajouter des utilisateurs de popular en base de données
+        """
         user_id_list=User.getUserIdList(nb_page)
         total=0
         not_fetched=0
@@ -57,6 +71,9 @@ class User(object):
                 
     @staticmethod
     def fetchLatestStats():
+        """
+        Mettre à jour les stats des utilisateurs déjà en bdd
+        """
         total = 0
         not_fetched = 0
         for user in UserModel.objects.all():
@@ -76,6 +93,11 @@ class User(object):
     
     @staticmethod
     def modelToUser(u_model):
+        """
+        Créer un objet user avec les données d'un utilisateur en bdd
+        @param: Objet models.UserModel (objet de l'ORM django)
+        @return: Objet User
+        """
         u=User(u_model.user_id)
         u.name=u_model.name
         u.photo_url=u_model.photo_url
@@ -109,6 +131,10 @@ class User(object):
         return 'http://www.pinterest.com/{0}'.format(self.id)
         
     def fetchUser(self,header_info=None):
+        """
+        Récupérer informations sur un utilisateur.
+        Résultats stockés dans self.xxxx
+        """
         if header_info==None:
             header_info=UserHeader(self.id)
             header_info.fetch()
@@ -122,6 +148,9 @@ class User(object):
         self.nb_following=header_info.nb_following     
             
     def fetchScoring(self):
+        """
+        Récupérer informations liés au scoring d'un utilisateur
+        """
         if not self.nb_pin:
             self.fetchUser()
         pins_info=PinListPage('{0}/pins/?page='.format(self.url()), self.id)
@@ -133,6 +162,10 @@ class User(object):
         self.nb_repin=pins_info.nb_repin
         
     def fetchFollowers(self, nb_page):
+        """
+        Récupérer el followers d'un utilisateur
+        Résultat stockés dans self.followers
+        """
         from followpage import FollowPage
         f_page=FollowPage(self.id,'followers')
         f_page.fetch(nb_page)
@@ -141,6 +174,10 @@ class User(object):
         self.followers=f_page.follow_list
         
     def fetchFollowing(self, nb_page):
+        """
+        Récupérer le following d'un utilisateur
+        Résultat stockés dans self.following
+        """
         from followpage import FollowPage
         f_page=FollowPage(self.id,'following')
         f_page.fetch(nb_page)
@@ -149,6 +186,9 @@ class User(object):
         self.following=f_page.follow_list
         
     def getBestFollowers(self,nb, key=lambda u: u.nb_followers):
+        """
+        Retourner followers les plus populaires
+        """
         if self.followers==None:
             self.fetchFollowers(1)
         self.followers.sort(key=key)
@@ -156,6 +196,9 @@ class User(object):
         return self.followers[-nb:]
     
     def getBestFollowing(self,nb, key=lambda u: u.nb_followers):
+        """
+        Retourner following les plus populaires
+        """
         if self.following==None:
             self.fetchFollowing(1)
         self.following.sort(key=key)
@@ -163,6 +206,10 @@ class User(object):
         return self.following[-nb:]
     
     def getAlikes(self):
+        """
+        Retourne les personnes suivants les mêmes personnes que l'utilisateur
+        dans l'ordre du moins semblable (ayant le moins de following en commun) au plus semblable(ayant le plsu de following en commun)
+        """
         best_following=self.getBestFollowing(10)
         if best_following:
             best_following=random.sample(best_following,1)
@@ -189,6 +236,9 @@ class User(object):
             return []
     
     def getToFollow(self,alikes=None):
+        """
+        Retourne les personnes à suivre
+        """
         if not alikes:
             alikes=self.getAlikes()
         if alikes:
@@ -207,6 +257,9 @@ class User(object):
             return []
     
     def getToRepin(self,nb=10):
+        """
+        Retourne la liste des pins suggérer
+        """
         nb_user=2 
         to_follow=self.getToFollow()[-10:]
         if len(to_follow)>nb_user:
@@ -234,7 +287,10 @@ class User(object):
 
             return random.sample(pin_list, nb*(nb<len(pin_list)))
             
-    def saveDB(self): # AVOIR
+    def saveDB(self):
+        """
+        Sauver les infos de l'utilisateurs en bdd
+        """
         try:
             u=UserModel.objects.get(user_id=self.id)
             u.name=self.name
@@ -265,6 +321,9 @@ class User(object):
         return u
     
     def calcLatLng(self):
+        """
+        @return: (latitude,longitude) de l'utilisateur
+        """
         # Get the user or create a new one.
         if self.location !=None:
             try:  

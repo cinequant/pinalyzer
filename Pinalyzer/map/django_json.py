@@ -2,8 +2,8 @@ from django.db.models.query import QuerySet
 from django.utils.simplejson import  JSONEncoder
 from django.db.models import Model
 import datetime
-from map.user import User
-from map.pin import Pin
+from user import User
+from pin import Pin
 #from django.core.serializers import serialize
 
 class MyEncoder(JSONEncoder):
